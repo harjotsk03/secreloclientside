@@ -32,6 +32,7 @@ export default function Register() {
     setLoading(true);
     setError("");
 
+    // Basic validation
     if (firstName === "") {
       setFirstNameError("Missing first name");
       setLoading(false);
@@ -39,37 +40,80 @@ export default function Register() {
     } else {
       setFirstNameError("");
     }
-    if (lastName == "") {
-      setLastName("Missing last name");
+
+    if (lastName === "") {
+      setLastNameError("Missing last name");
       setLoading(false);
       return;
     } else {
       setLastNameError("");
     }
-    if (email == "") {
+
+    if (email === "") {
       setEmailError("Missing email");
       setLoading(false);
       return;
     } else {
       setEmailError("");
     }
-    if (password == "") {
+
+    if (password === "") {
       setPasswordError("Missing password");
       setLoading(false);
       return;
     } else {
       setPasswordError("");
     }
-    if (password != confirmPassword) {
+
+    if (password !== confirmPassword) {
       setPasswordError("Passwords do not match");
       setLoading(false);
       return;
     } else {
       setPasswordError("");
     }
+
+    try {
+      // Build request body
+      const body = {
+        full_name: `${firstName} ${lastName}`,
+        email,
+        password,
+      };
+
+      // Send POST request
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Something went wrong");
+        showAlert(data.message || "Registration failed", "error");
+        setLoading(false);
+        return;
+      }
+
+      // Registration successful
+      showAlert("Account created successfully!", "success");
+      // router.push("/login"); // redirect to login
+    } catch (err) {
+      console.error(err);
+      setError("Failed to register. Please try again.");
+      showAlert("Failed to register. Please try again.", "error");
+    } finally {
       setLoading(false);
-      return;
+    }
   };
+
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Key, Mail } from "lucide-react";
 import { TextInput } from "../components/inputs/TextInput";
 import { PasswordInput } from "../components/inputs/PasswordInput";
@@ -6,8 +6,11 @@ import { Button } from "../components/buttons/Button";
 import Layout from "../components/layouts/Layout";
 import { AlertContext, useAlert } from "../context/alertContext";
 import { useRouter } from "next/router";
+import { useAuth } from "../context/AuthContext";
+import { useSearchParams } from "next/navigation";
 
 export default function Login() {
+  const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,20 +19,33 @@ export default function Login() {
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { showAlert } = useContext(AlertContext);
+  const params = useSearchParams();
+  const alertShown = useRef(false);
+
+  const from = params.get("from");
+  const msg = params.get("msg");
+
+  useEffect(() => {
+    if (msg && !alertShown.current) {
+      alertShown.current = true;
+      showAlert(msg, "error");
+    }
+  }, [msg, showAlert]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (email == "") {
+    if (email === "") {
       setEmailError("Missing email");
       setLoading(false);
       return;
     } else {
       setEmailError("");
     }
-    if (password == "") {
+
+    if (password === "") {
       setPasswordError("Missing password");
       setLoading(false);
       return;
@@ -37,7 +53,46 @@ export default function Login() {
       setPasswordError("");
     }
 
-    setLoading(false);
+    try {
+      // Build request body
+      const body = {
+        email,
+        password,
+      };
+
+      // Send POST request
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Something went wrong");
+        showAlert(data.message || "Log in failed", "error");
+        setLoading(false);
+        return;
+      }
+
+      // Registration successful
+      showAlert("Logged in successfully!", "success");
+      login(data.user, data.token);
+      if (from) router.push(from);
+      else router.push("/app/repos");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to log in. Please try again.");
+      showAlert("Failed to log in. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

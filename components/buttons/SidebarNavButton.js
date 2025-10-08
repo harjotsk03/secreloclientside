@@ -47,7 +47,7 @@ export const SidebarNavButton = ({
           inline-flex items-center text-sm relative ${
             !sidebarOpen
               ? "px-3 h-9"
-              : "px-0 flex items-center justify-center h-9"
+              : "px-3 lg:px-0 flex items-center lg:justify-center h-9"
           } hover:text-black hover:dark:text-white hover:bg-stone-200 ${
           isActive
             ? "dark:bg-stone-800 bg-stone-200 hover:bg-stone-200"
@@ -62,7 +62,8 @@ export const SidebarNavButton = ({
             className={`${!sidebarOpen ? "mr-2 w-3.5 h-auto" : "w-3.5 h-auto"}`}
           />
         )}
-        {!sidebarOpen && label}
+        <p className="hidden lg:flex">{!sidebarOpen && label}</p>
+        <p className="lg:hidden flex ml-2 text-base">{label}</p>
         {subItems.length > 0 &&
           !sidebarOpen &&
           (expanded ? (

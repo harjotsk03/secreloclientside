@@ -9,6 +9,7 @@ import { BookCheck, Building2, HamIcon, Home, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ProfileDropDown } from "../modals/ProfileDropDown";
 import { SidebarNav } from "./SidebarNav";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Nav({
   sidebarOpen,
@@ -23,13 +24,9 @@ export default function Nav({
   const toggleDrawer = () => setMenuOpen(!menuOpen);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleOpenProfileModal = () => setOpenProfileModal(!openProfileModal);
+  const { user } = useAuth(); // get user
 
-  useEffect(() => {
-    if (pathname?.includes("/app")) {
-      setShowSideNav(true);
-    }
-  }, [pathname]);
-
+  // deterministic colors based on first letter
   const colors = [
     "bg-red-500",
     "bg-indigo-500",
@@ -37,6 +34,20 @@ export default function Nav({
     "bg-orange-500",
     "bg-blue-500",
   ];
+  const getColorFromLetter = (letter) => {
+    if (!letter) return colors[0];
+    const code = letter.toUpperCase().charCodeAt(0);
+    return colors[code % colors.length];
+  };
+
+  const profileLetter = user?.profile?.full_name?.[0] || "?";
+  const profileColor = getColorFromLetter(profileLetter);
+
+  useEffect(() => {
+    if (pathname?.includes("/app")) {
+      setShowSideNav(true);
+    }
+  }, [pathname]);
 
   return (
     <>
@@ -71,6 +82,14 @@ export default function Nav({
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {user?.profile && (
+            <button
+              onClick={() => router.push("/app/profile")}
+              className={`w-9 h-9 flex items-center justify-center rounded-full text-white font-medium text-sm ${profileColor}`}
+            >
+              {profileLetter.toUpperCase()}
+            </button>
+          )}
         </div>
       </div>
 
@@ -104,8 +123,8 @@ export default function Nav({
               }, 300);
             }}
           >
-            <p className="dm-sans-medium text-base text-black dark:text-white">
-              PromptPort
+            <p className="dm-sans-medium text-xl text-emerald-600 dark:text-white">
+              secrelo<span className="text-black">.</span>
             </p>
           </button>
           <button

@@ -5,6 +5,7 @@ import { ThemeProvider } from "../context/ThemeContext";
 import { AlertProvider } from "../context/alertContext";
 import "../styles/globals.css";
 import { useContext, useEffect, useState } from "react";
+import { AuthProvider } from "../context/AuthContext";
 
 function AppContent({ Component, pageProps }) {
   const [organizationId, setOrganizationId] = useState("");
@@ -20,11 +21,13 @@ function AppContent({ Component, pageProps }) {
 
 function MyApp({ Component, pageProps }) {
   return (
-      <ThemeProvider>
-        <AlertProvider>
+    <AlertProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <AppContent Component={Component} pageProps={pageProps} />
-        </AlertProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </AlertProvider>
   );
 }
 
