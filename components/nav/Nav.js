@@ -82,6 +82,9 @@ export default function Nav({
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {!user && (
+            <Button onClick={() => router.push("/login")}>Log In</Button>
+          )}
           {user?.profile && (
             <button
               onClick={() => router.push("/app/profile")}

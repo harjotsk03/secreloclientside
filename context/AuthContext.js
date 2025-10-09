@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const parsed = JSON.parse(stored);
         setUserState(parsed);
-        resetIdleTimer(parsed.token);
+        resetIdleTimer(parsed.accessToken);
       } catch (err) {
         console.error("Failed to parse stored user", err);
         localStorage.removeItem("user");
@@ -42,9 +42,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (profile, token) => {
-    setUser({ profile, token });
-    resetIdleTimer(token);
+  const login = (profile, accessToken, refreshToken) => {
+    setUser({ profile, accessToken, refreshToken });
+    resetIdleTimer(accessToken);
   };
 
   const logout = () => {
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     showAlert("Logged out", "error");
   };
 
-  const resetIdleTimer = (token = user?.token) => {
+  const resetIdleTimer = (token = user?.accessToken) => {
     if (!token) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
 
   // Listen to user activity to reset the idle timer
   useEffect(() => {
-    if (!user?.token) return;
+    if (!user?.accessToken) return;
 
     const events = ["mousemove", "keydown", "mousedown", "touchstart"];
     const handleActivity = () => resetIdleTimer();
@@ -94,8 +94,123 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener("storage", syncLogout);
   }, []);
 
+  const refreshAccessToken = async (refreshToken) => {
+    console.log(calling, refreshToken);
+    if (!refreshToken) return null;
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/refresh-token`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: refreshToken }),
+        }
+      );
+
+      if (!res.ok) {
+        logout();
+        return null;
+      }
+
+      const data = await res.json();
+      const newAccessToken = data.accessToken;
+
+      setUser((prev) => ({
+        ...prev,
+        accessToken: newAccessToken,
+      }));
+
+      return newAccessToken;
+    } catch (err) {
+      console.error("Failed to refresh access token", err);
+      logout();
+      return null;
+    }
+  };
+
+  async function authFetch(url, options = {}) {
+    let token = user?.accessToken;
+    if (!token) throw new Error("No access token available");
+
+    let res = await fetch(`${url}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    let data = await res.json();
+
+    // If 401, try to refresh token
+    if (res.status === 401 && user?.refreshToken) {
+      token = await refreshAccessToken(user.refreshToken);
+      if (token) {
+        options.headers.Authorization = `Bearer ${token}`;
+        res = await fetch(url, options);
+        data = await res.json(); // await JSON again
+      }
+    }
+
+    if (!res.ok) {
+      // You can throw here like login
+      throw new Error(data.message || "Request failed");
+    }
+
+    return data;
+  }
+
+  async function authPost(url, body = {}, options = {}) {
+    // Grab current access token
+    let token = user?.accessToken;
+    if (!token) throw new Error("No access token available");
+
+    // Build request options
+    let fetchOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+      body: JSON.stringify(body),
+      ...options,
+    };
+
+    let res = await fetch(url, fetchOptions);
+    let data = await res.json();
+
+    // If 401, try to refresh token and retry
+    if (res.status === 401 && user?.refreshToken) {
+      token = await refreshAccessToken(user.refreshToken);
+      if (token) {
+        fetchOptions.headers.Authorization = `Bearer ${token}`;
+        res = await fetch(url, fetchOptions);
+        data = await res.json();
+      }
+    }
+
+    if (!res.ok) {
+      throw new Error(data.message || "Request failed");
+    }
+
+    return data;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        login,
+        logout,
+        loading,
+        authFetch,
+        authPost,
+        refreshAccessToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

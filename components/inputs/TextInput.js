@@ -49,7 +49,7 @@ export const TextInput = ({
           className={`
     w-full px-5 py-2 h-10 text-sm rounded-lg dm-sans-regular text-black bg-white dark:bg-darkBG3 dark:text-white transition-colors border border-stone-200 dark:border-stone-800 focus:border-black focus:dark:border-stone-500 focus:ring-transparent focus:outline-none focus:ring-0
     ${Icon ? "pl-8" : "pl-3"}
-    ${multiline ? "min-h-32 resize-vertical" : "h-9"}
+    ${multiline ? "min-h-24 resize-vertical" : "h-9"}
     ${disabled ? "opacity-50 cursor-not-allowed" : ""}
     ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}
   `}

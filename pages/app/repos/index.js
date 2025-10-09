@@ -2,77 +2,42 @@ import { PlusCircle, Users, Key, GitBranch, Calendar, GalleryVerticalEnd, KeySqu
 import { Button } from "../../../components/buttons/Button.js";
 import { TextInput } from "../../../components/inputs/TextInput.js";
 import AuthLayout from "../../../components/layouts/AuthLayout.js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CreateNewRepoModal from "../../../components/modals/CreateNewRepoModal.js";
-
-const repos = [
-  {
-    id: 1,
-    name: "authentication-service",
-    description: "Microservice handling user authentication and authorization",
-    createdAt: "2024-03-15",
-    members: 8,
-    secrets: 12,
-    type: "Hackathon",
-  },
-  {
-    id: 2,
-    name: "frontend-dashboard",
-    description: "Main admin dashboard built with React",
-    createdAt: "2024-05-22",
-    members: 5,
-    secrets: 8,
-    type: "Course Project",
-  },
-  {
-    id: 3,
-    name: "data-pipeline",
-    description: "ETL pipeline for processing analytics data",
-    createdAt: "2023-11-08",
-    members: 12,
-    secrets: 24,
-    type: "Course Project",
-  },
-  {
-    id: 4,
-    name: "mobile-app",
-    description: "Cross-platform mobile application",
-    createdAt: "2024-01-30",
-    members: 6,
-    secrets: 15,
-    type: "Course Project",
-  },
-  {
-    id: 5,
-    name: "api-gateway",
-    description: "Central API gateway and routing service",
-    createdAt: "2024-06-12",
-    members: 4,
-    secrets: 18,
-    type: "Personal Project",
-  },
-  {
-    id: 6,
-    name: "infrastructure",
-    description: "Infrastructure as code and deployment configs",
-    createdAt: "2023-09-25",
-    members: 10,
-    secrets: 32,
-    type: "Internship",
-  },
-];
+import { useAuth } from "../../../context/AuthContext.js";
 
 export default function Repos() {
   const [showCreateRepoModal, setShowCreateRepoModal] = useState("");
+  const { user, authFetch, loading } = useAuth();
+  const [repos, setRepos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const handleRepoClick = (repoId) => {
     window.location.href = `/app/repos/${repoId}`;
   };
 
-    const filteredRepos = repos.filter((repo) =>
-      repo.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+
+    const fetchRepos = async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/fetchRepos`
+        );
+        console.log(res.data);
+        setRepos(res.data || []);
+      } catch (err) {
+        console.error("Error fetching repos:", err);
+      }
+    };
+
+    fetchRepos();
+  }, [loading, user, authFetch]);
+
+  const filteredRepos = repos.filter((repo) =>
+    repo?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <>
@@ -89,7 +54,10 @@ export default function Repos() {
               className="absolute inset-0 bg-black bg-opacity-50"
               onClick={() => setShowCreateRepoModal(false)}
             />
-            <CreateNewRepoModal />
+            <CreateNewRepoModal
+              setShowCreateRepoModal={setShowCreateRepoModal}
+              setRepos={setRepos}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -126,7 +94,7 @@ export default function Repos() {
                   <h3 className="text-lg dm-sans-medium text-black dark:text-white">
                     {repo.name}
                   </h3>
-                  <span className="text-xs px-3 py-1 text-center w-max dm-sans-regular rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                  <span className="capitalize text-xs px-3 py-1 text-center w-max dm-sans-regular rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
                     {repo.type}
                   </span>
                 </div>

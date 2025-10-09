@@ -14,170 +14,52 @@ import {
 } from "lucide-react";
 import { TextInput } from "../../../components/inputs/TextInput";
 import { AnimatePresence, motion } from "framer-motion";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import AddNewKeyModal from "../../../components/modals/AddNewKeyModal";
 import { AlertContext } from "../../../context/alertContext";
 import ViewKeyDetailsModal from "../../../components/modals/ViewKeyDetailsModal";
 import ViewMemberDetailsModal from "../../../components/modals/ViewMemberDetailsModal";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function RouteDetailsPage() {
   const router = useRouter();
   const { showAlert } = useContext(AlertContext);
   const { id } = router.query;
+  const [repoMembers, setRepoMembers] = useState([]);
+  const [repoDetails, setRepoDetails] = useState([]);
+  const [repoFolders, setRepoFolders] = useState([]);
+  const [secrets, setSecrets] = useState([]);
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
   const [showKeyDetailsModal, setShowKeyDetailsModal] = useState(false);
   const [showMemberDetailsModal, setShowMemberDetailsModal] = useState(false);
   const [activeKey, setActiveKey] = useState("");
   const [activeMember, setActiveMember] = useState("");
+  const { user, authFetch, loading } = useAuth();
 
-  // -------------------- MOCK DATA --------------------
-  const mockSecrets = [
-    {
-      id: "1",
-      keyName: "AUTH_JWT_SECRET",
-      value: "sk-2fd7b1f9d1b24b22b7c9f45bfb1a3ef1",
-      createdBy: "devops@company.com",
-      createdAt: "2025-08-12T14:32:00Z",
-      updatedBy: "devops@company.com",
-      lastUpdated: "2025-09-29T10:45:00Z",
-      description: "Secret key for signing JWT access tokens",
-      version: "v2.2",
-      secretType: "jwt_key",
-      autoKillDate: "2026-02-12T00:00:00Z",
-    },
-    {
-      id: "2",
-      keyName: "OAUTH_CLIENT_ID",
-      value: "client-9b12f3c7e4",
-      createdBy: "api-team@company.com",
-      createdAt: "2025-07-01T08:21:00Z",
-      updatedBy: "devops@company.com",
-      lastUpdated: "2025-09-27T19:12:00Z",
-      description: "OAuth 2.0 client ID for Google authentication",
-      version: "v1.0",
-      secretType: "oauth_token",
-      autoKillDate: "2026-01-01T00:00:00Z",
-    },
-    {
-      id: "3",
-      keyName: "OAUTH_CLIENT_SECRET",
-      value: "gsecr_8d1a99f82132b8ff9",
-      createdBy: "api-team@company.com",
-      createdAt: "2025-07-01T08:21:00Z",
-      updatedBy: "devops@company.com",
-      lastUpdated: "2025-09-30T11:02:00Z",
-      description: "Client secret for Google OAuth authentication",
-      version: "v3.4",
-      secretType: "client_secret",
-      autoKillDate: "2026-01-30T00:00:00Z",
-    },
-    {
-      id: "4",
-      keyName: "STRIPE_API_KEY",
-      value: "sk_live_51L3x...",
-      createdBy: "billing@company.com",
-      createdAt: "2025-04-22T15:47:00Z",
-      updatedBy: "devops@company.com",
-      lastUpdated: "2025-10-02T21:09:00Z",
-      description: "Live Stripe key for payment processing",
-      version: "v1.0",
-      secretType: "api_key",
-      autoKillDate: "2026-03-22T00:00:00Z",
-    },
-    {
-      id: "5",
-      keyName: "SENTRY_DSN",
-      value: "https://b8f1a7d4a2d34a47a1f3a2b8e9f8c123@sentry.io/1234567",
-      createdBy: "devops@company.com",
-      createdAt: "2025-03-14T09:33:00Z",
-      updatedBy: "devops@company.com",
-      lastUpdated: "2025-09-20T18:21:00Z",
-      description: "Sentry DSN for error tracking in the auth service",
-      version: "v2.7",
-      secretType: "webhook_secret",
-      autoKillDate: "2026-03-14T00:00:00Z",
-    },
-    {
-      id: "6",
-      keyName: "INTERNAL_API_TOKEN",
-      value: "api-internal-1a2b3c4d5e6f",
-      createdBy: "backend@company.com",
-      createdAt: "2025-06-10T12:15:00Z",
-      updatedBy: "devops@company.com",
-      lastUpdated: "2025-09-28T09:50:00Z",
-      description: "Token used for inter-service communication with gateway",
-      version: "v5.6",
-      secretType: "api_key",
-      autoKillDate: "2026-02-10T00:00:00Z",
-    },
-  ];
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+    if (!id) return;
 
+    const fetchRepoDetails = async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/${id}`
+        );
+        setRepoDetails(res.data.repo);
+        setRepoFolders(res.data.folders);
+        setRepoMembers(res.data.members);
+      } catch (err) {
+        console.error("Error fetching repos:", err);
+      }
+    };
 
+    fetchRepoDetails();
+  }, [loading, user, authFetch, id]);
 
-  const repoMembers = [
-    {
-      id: "1",
-      name: "Alice Nguyen (You)",
-      email: "alice.nguyen@company.com",
-      role: "Lead Developer",
-      permission: "Owner",
-      joinedAt: "2025-02-12T09:21:00Z",
-    },
-    {
-      id: "2",
-      name: "Ravi Patel",
-      email: "ravi.patel@company.com",
-      role: "Backend Engineer",
-      permission: "Write",
-      joinedAt: "2025-03-04T11:05:00Z",
-    },
-    {
-      id: "3",
-      name: "Maya Johnson",
-      email: "maya.johnson@company.com",
-      role: "QA Specialist",
-      permission: "Pending",
-      joinedAt: "2025-05-21T15:42:00Z",
-    },
-    {
-      id: "4",
-      name: "Carlos Mendes",
-      email: "carlos.mendes@company.com",
-      role: "DevOps Engineer",
-      permission: "Read",
-      joinedAt: "2025-01-30T17:14:00Z",
-    },
-    {
-      id: "5",
-      name: "Sophia Lee",
-      email: "sophia.lee@company.com",
-      role: "Frontend Developer",
-      permission: "Write",
-      joinedAt: "2025-04-09T12:10:00Z",
-    },
-    {
-      id: "6",
-      name: "Harjot Singh",
-      email: "harjot@aetherautomation.com",
-      role: "Full Stack Software Engineer",
-      permission: "Admin",
-      joinedAt: "2025-04-09T12:10:00Z",
-    },
-    {
-      id: "7",
-      name: "Sophia Lee",
-      email: "sophia.lee@company.com",
-      role: "Frontend Developer",
-      permission: "Write",
-      joinedAt: "2025-04-09T12:10:00Z",
-    },
-  ];
+  const pendingMembers = repoMembers.filter((m) => m.status === "pending");
+  const activeMembers = repoMembers.filter((m) => m.status !== "pending");
 
-  // -------------------- SORTED MEMBERS --------------------
-  const pendingMembers = repoMembers.filter((m) => m.permission === "Pending");
-  const activeMembers = repoMembers.filter((m) => m.permission !== "Pending");
-
-  // -------------------- COMPONENT --------------------
   return (
     <>
       <AnimatePresence>
@@ -243,10 +125,10 @@ export default function RouteDetailsPage() {
         <div className="flex flex-row items-end justify-between mb-4">
           <div className="flex flex-col">
             <p className="dm-sans-medium text-2xl text-black dark:text-white mt-2">
-              authentication-service
+              {repoDetails?.name}
             </p>
             <p className="dm-sans-regular text-sm text-stone-600 dark:text-stone-300 mt-2">
-              Microservice handling user authentication and authorization
+              {repoDetails?.description}
             </p>
           </div>
           <div className="flex flex-row gap-2">
@@ -276,8 +158,11 @@ export default function RouteDetailsPage() {
             <TextInput placeholder="Find a key..." icon={Search} />
             <div className="w-full h-[64.5vh] overflow-y-scroll flex flex-col">
               <div className="flex flex-col gap-4">
-                {mockSecrets.map((secret) => (
-                  <div key={secret.id} className="flex text-left group justify-between rounded-md transition-all duration-500">
+                {secrets.map((secret) => (
+                  <div
+                    key={secret.id}
+                    className="flex text-left group justify-between rounded-md transition-all duration-500"
+                  >
                     <div>
                       <p className="text-base dm-sans-semibold text-black dark:text-white">
                         {secret.keyName}
@@ -344,10 +229,10 @@ export default function RouteDetailsPage() {
                       >
                         <div>
                           <p className="text-sm dm-sans-medium text-black dark:text-white">
-                            {member.name}
+                            {member.full_name}
                           </p>
                           <p className="text-xs dm-sans-light text-stone-500 dark:text-stone-400">
-                            {member.role}
+                            {member.member_role}
                           </p>
                         </div>
                         <div className="flex flex-row gap-2">
@@ -373,29 +258,32 @@ export default function RouteDetailsPage() {
                 {activeMembers.map((member) => (
                   <div
                     key={member.id}
-                    onClick={() => {setActiveMember(member); setShowMemberDetailsModal(true)}}
+                    onClick={() => {
+                      setActiveMember(member);
+                      setShowMemberDetailsModal(true);
+                    }}
                     className="flex items-center justify-between bg-white dark:bg-darkBG3 border border-stone-200 dark:border-stone-700 rounded-lg py-2 px-3 hover:cursor-pointer hover:bg-stone-50 dark:hover:bg-darkBG transition-all duration-500"
                   >
                     <div>
                       <p className="text-sm dm-sans-medium text-black dark:text-white">
-                        {member.name}
+                        {member.full_name}
                       </p>
                       <p className="text-xs dm-sans-light text-stone-500 dark:text-stone-400">
-                        {member.role}
+                        {member.member_role}
                       </p>
                     </div>
                     <p
                       className={`text-xs px-2 py-1 rounded-md ${
-                        member.permission === "Owner"
+                        member.member_permissions === "Owner"
                           ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                          : member.permission === "Admin"
+                          : member.member_permissions === "Admin"
                           ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
-                          : member.permission === "Write"
+                          : member.member_permissions === "Write"
                           ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
                           : "bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-300"
                       }`}
                     >
-                      {member.permission}
+                      {member.member_permissions}
                     </p>
                   </div>
                 ))}

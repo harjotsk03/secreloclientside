@@ -9,8 +9,28 @@ import { DatePicker } from "../inputs/DatePicker";
 
 export default function ViewMemberDetailsModal({ memberData }) {
   const { showAlert } = useContext(AlertContext);
-  const [formData, setFormData] = useState(memberData);
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    member_role: "",
+    member_permissions: "",
+    created_at: "",
+    joinedAt: "",
+  });
   const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    if (memberData) {
+      setFormData({
+        full_name: memberData.full_name || "",
+        email: memberData.email || "",
+        member_role: memberData.member_role || "",
+        member_permissions: memberData.member_permissions || "",
+        created_at: memberData.created_at || "",
+        joinedAt: memberData.joinedAt || memberData.created_at || "",
+      });
+    }
+  }, [memberData]);
 
   useEffect(() => {
     const changed = JSON.stringify(formData) !== JSON.stringify(memberData);
@@ -36,10 +56,10 @@ export default function ViewMemberDetailsModal({ memberData }) {
   }
 
   const permissionOptions = [
-    { label: "Owner", value: "Owner" },
-    { label: "Admin", value: "Admin" },
-    { label: "Write", value: "Write" },
-    { label: "Read", value: "Read" },
+    { label: "Owner", value: "owner" },
+    { label: "Admin", value: "admin" },
+    { label: "Write", value: "write" },
+    { label: "Read", value: "read" },
   ];
 
   return (
@@ -54,7 +74,7 @@ export default function ViewMemberDetailsModal({ memberData }) {
       <div className="flex justify-between items-start mb-4">
         <div>
           <p className="dm-sans-regular text-lg lg:text-xl text-black dark:text-white">
-            Viewing Member — {memberData.name}
+            Viewing Member — {memberData.full_name}
           </p>
           <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/30 mt-1">
             <span className="text-black">Joined:</span>{" "}
@@ -82,9 +102,9 @@ export default function ViewMemberDetailsModal({ memberData }) {
         <TextInput
           label="Full Name"
           placeholder="Full Name"
-          value={formData.name}
+          value={formData.full_name}
           icon={User}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          onChange={(val) => setFormData({ ...formData, full_name: val })}
         />
 
         <TextInput
@@ -92,31 +112,33 @@ export default function ViewMemberDetailsModal({ memberData }) {
           placeholder="Email Address"
           value={formData.email}
           icon={Mail}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          onChange={(val) => setFormData({ ...formData, email: val })}
         />
 
         <TextInput
           label="Role / Position"
           placeholder="e.g. Frontend Developer"
-          value={formData.role}
+          value={formData.member_role}
           icon={KeySquare}
-          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+          onChange={(val) => setFormData({ ...formData, member_role: val })}
         />
 
         <Select
-          disabled={memberData.permission == "Owner"}
+          disabled={memberData.member_permissions == "Owner"}
           label="Permission Level"
           required={true}
           placeholder="Select permission"
           options={permissionOptions}
-          value={formData.permission}
-          onChange={(val) => setFormData({ ...formData, permission: val })}
+          value={formData.member_permissions}
+          onChange={(val) =>
+            setFormData({ ...formData, member_permissions: val })
+          }
         />
 
         <DatePicker
           disabled={true}
           label="Joined At"
-          date={formData.joinedAt}
+          date={formData.created_at}
           onChange={(date) => setFormData({ ...formData, joinedAt: date })}
         />
       </div>

@@ -11,7 +11,7 @@ export default function AuthLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showSideNav, setShowSideNav] = useState(false);
   const { showAlert } = useContext(AlertContext);
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, setUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -23,22 +23,64 @@ export default function AuthLayout({ children }) {
   };
 
   useEffect(() => {
-    if (loading) return; // <-- wait for localStorage to load
+    if (loading) return;
 
-    if (!user?.token && !redirecting.current) {
+    const accessToken = user?.accessToken;
+
+    if (!accessToken && !redirecting.current) {
       redirecting.current = true;
       redirectToLogin("Please log in to continue");
       return;
     }
 
-    if (user?.token && !redirecting.current) {
+    const refreshAccessToken = async (refreshToken) => {
       try {
-        const payload = JSON.parse(atob(user.token.split(".")[1]));
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/refresh-token`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: refreshToken }),
+          }
+        );
+
+        if (!res.ok) throw new Error("Failed to refresh token");
+
+        const data = await res.json();
+        const newAccessToken = data.accessToken;
+
+        setUser((prev) => ({
+          ...prev,
+          accessToken: newAccessToken,
+        }));
+
+        return newAccessToken;
+      } catch (err) {
+        logout(); // cannot refresh → force logout
+        return null;
+      }
+    };
+
+    if (accessToken && !redirecting.current) {
+      try {
+        const payload = JSON.parse(atob(accessToken.split(".")[1]));
         const now = Date.now() / 1000;
+
         if (payload.exp && payload.exp < now) {
-          redirecting.current = true;
-          logout();
-          redirectToLogin("Session expired. Please log in again.");
+          // Token expired — try to refresh
+          refreshAccessToken(user.refreshToken)
+            .then((newToken) => {
+              if (!newToken) {
+                redirecting.current = true;
+                logout();
+                redirectToLogin("Session expired. Please log in again.");
+              }
+            })
+            .catch(() => {
+              redirecting.current = true;
+              logout();
+              redirectToLogin("Session expired. Please log in again.");
+            });
         }
       } catch (err) {
         console.error("Invalid token", err);
@@ -59,7 +101,8 @@ export default function AuthLayout({ children }) {
     localStorage.setItem("sidebarOpen", sidebarOpen.toString());
   }, [sidebarOpen]);
 
-  if (!user?.token) return null; // optional: show spinner while checking
+  if (loading) return <div>Loading...</div>;
+  if (!user?.accessToken) return null;
 
   return (
     <div className="transition-all duration-300 ease-in-out">

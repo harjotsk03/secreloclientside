@@ -74,6 +74,8 @@ export default function Login() {
 
       const data = await res.json();
 
+      console.log(data);
+
       if (!res.ok) {
         setError(data.message || "Something went wrong");
         showAlert(data.message || "Log in failed", "error");
@@ -83,7 +85,7 @@ export default function Login() {
 
       // Registration successful
       showAlert("Logged in successfully!", "success");
-      login(data.user, data.token);
+      login(data.user, data.accessToken, data.refreshToken);
       if (from) router.push(from);
       else router.push("/app/repos");
     } catch (err) {
