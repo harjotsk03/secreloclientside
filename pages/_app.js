@@ -6,6 +6,7 @@ import { AlertProvider } from "../context/alertContext";
 import "../styles/globals.css";
 import { useContext, useEffect, useState } from "react";
 import { AuthProvider } from "../context/AuthContext";
+import { EncryptionProvider } from "../context/EncryptionContext";
 
 function AppContent({ Component, pageProps }) {
   const [organizationId, setOrganizationId] = useState("");
@@ -23,9 +24,11 @@ function MyApp({ Component, pageProps }) {
   return (
     <AlertProvider>
       <AuthProvider>
-        <ThemeProvider>
-          <AppContent Component={Component} pageProps={pageProps} />
-        </ThemeProvider>
+        <EncryptionProvider>
+          <ThemeProvider>
+            <AppContent Component={Component} pageProps={pageProps} />
+          </ThemeProvider>
+        </EncryptionProvider>
       </AuthProvider>
     </AlertProvider>
   );

@@ -8,6 +8,8 @@ import { AlertContext, useAlert } from "../context/alertContext";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "next/navigation";
+import * as sodium from "libsodium-wrappers-sumo";
+import { useEncryption } from "../context/EncryptionContext";
 
 export default function Login() {
   const { login } = useAuth();
@@ -17,10 +19,11 @@ export default function Login() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isLoading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [decryptionStatus, setDecryptionStatus] = useState("");
   const { showAlert } = useContext(AlertContext);
   const params = useSearchParams();
   const alertShown = useRef(false);
+  const { setEncryptionKeys } = useEncryption();
 
   const from = params.get("from");
   const msg = params.get("msg");
@@ -35,65 +38,101 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setDecryptionStatus("");
 
-    if (email === "") {
-      setEmailError("Missing email");
+    if (!email || !password) {
+      setEmailError(email ? "" : "Missing email");
+      setPasswordError(password ? "" : "Missing password");
       setLoading(false);
       return;
-    } else {
-      setEmailError("");
-    }
-
-    if (password === "") {
-      setPasswordError("Missing password");
-      setLoading(false);
-      return;
-    } else {
-      setPasswordError("");
     }
 
     try {
-      // Build request body
-      const body = {
-        email,
-        password,
-      };
-
-      // Send POST request
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/login`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
         }
       );
 
       const data = await res.json();
-
-      console.log(data);
-
       if (!res.ok) {
-        setError(data.message || "Something went wrong");
         showAlert(data.message || "Log in failed", "error");
         setLoading(false);
         return;
       }
 
-      // Registration successful
-      showAlert("Logged in successfully!", "success");
+      let privateKey = null;
+      let publicKey = null;
+
+      // STEP 1: Decrypt keys if encryption data is provided
+      if (data.encryption) {
+        setDecryptionStatus("Decrypting keys...");
+
+        const worker = new Worker(
+          new URL("../workers/decryptionWorker.js", import.meta.url)
+        );
+
+        const decryptionPromise = new Promise((resolve, reject) => {
+          worker.onmessage = (e) => {
+            worker.terminate();
+            if (e.data.success) {
+              resolve(e.data.privateKey);
+            } else {
+              reject(new Error(e.data.error));
+            }
+          };
+
+          worker.onerror = (error) => {
+            worker.terminate();
+            reject(error);
+          };
+
+          worker.postMessage({
+            ...data.encryption,
+            password,
+          });
+        });
+
+        const privateKeyB64 = await decryptionPromise;
+
+        // Convert back to Uint8Array
+        await sodium.ready;
+        privateKey = sodium.from_base64(
+          privateKeyB64,
+          sodium.base64_variants.ORIGINAL
+        );
+        publicKey = sodium.from_base64(
+          data.encryption.public_key,
+          sodium.base64_variants.ORIGINAL
+        );
+
+        console.log("🔓 Private key decrypted successfully");
+      }
+
+      // STEP 2: Set auth state FIRST (this makes user authenticated)
+      setDecryptionStatus("Logging in...");
       login(data.user, data.accessToken, data.refreshToken);
+
+      // STEP 3: THEN set encryption keys (now that user is authenticated)
+      if (privateKey && publicKey) {
+        setEncryptionKeys(publicKey, privateKey);
+        console.log("🔐 Encryption keys stored in memory");
+      }
+
+      showAlert("Logged in successfully!", "success");
+
+      // STEP 4: Navigate to destination
       if (from) router.push(from);
       else router.push("/app/repos");
     } catch (err) {
       console.error(err);
-      setError("Failed to log in. Please try again.");
       showAlert("Failed to log in. Please try again.", "error");
     } finally {
       setLoading(false);
+      setDecryptionStatus("");
     }
   };
 
@@ -129,7 +168,7 @@ export default function Login() {
           />
 
           <Button size="xl" variant="solid" type="submit" loading={isLoading}>
-            {isLoading ? "Logging in..." : "Log In"}
+            {isLoading ? decryptionStatus || "Logging in..." : "Log In"}
           </Button>
         </form>
         <button

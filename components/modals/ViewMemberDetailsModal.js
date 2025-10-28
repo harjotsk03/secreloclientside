@@ -15,7 +15,7 @@ export default function ViewMemberDetailsModal({ memberData }) {
     member_role: "",
     member_permissions: "",
     created_at: "",
-    joinedAt: "",
+    joined_at: "",
   });
   const [isDirty, setIsDirty] = useState(false);
 
@@ -27,16 +27,22 @@ export default function ViewMemberDetailsModal({ memberData }) {
         member_role: memberData.member_role || "",
         member_permissions: memberData.member_permissions || "",
         created_at: memberData.created_at || "",
-        joinedAt: memberData.joinedAt || memberData.created_at || "",
+        joined_at: memberData.joined_at || "",
       });
     }
   }, [memberData]);
 
   useEffect(() => {
-    const changed = JSON.stringify(formData) !== JSON.stringify(memberData);
+    if (!memberData) return;
+
+    const changed =
+      formData.full_name !== memberData.full_name ||
+      formData.email !== memberData.email ||
+      formData.member_role !== memberData.member_role ||
+      formData.member_permissions !== memberData.member_permissions;
+
     setIsDirty(changed);
   }, [formData, memberData]);
-
   function formatDateTime(isoString) {
     if (!isoString) return "Unknown";
     const date = new Date(isoString);
@@ -78,7 +84,7 @@ export default function ViewMemberDetailsModal({ memberData }) {
           </p>
           <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/30 mt-1">
             <span className="text-black">Joined:</span>{" "}
-            {formatDateTime(memberData.joinedAt)}
+            {formatDateTime(memberData.joined_at)}
           </p>
         </div>
 
@@ -138,7 +144,7 @@ export default function ViewMemberDetailsModal({ memberData }) {
         <DatePicker
           disabled={true}
           label="Joined At"
-          date={formData.created_at}
+          date={formData.joined_at}
           onChange={(date) => setFormData({ ...formData, joinedAt: date })}
         />
       </div>

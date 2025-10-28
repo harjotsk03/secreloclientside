@@ -7,6 +7,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import CreateNewRepoModal from "../../../components/modals/CreateNewRepoModal.js";
 import { useAuth } from "../../../context/AuthContext.js";
 
+const formatType = (type) => {
+  if (!type) return "";
+  return type
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // capitalize
+    .join(" ");
+};
+
 export default function Repos() {
   const [showCreateRepoModal, setShowCreateRepoModal] = useState("");
   const { user, authFetch, loading } = useAuth();
@@ -90,13 +98,13 @@ export default function Repos() {
               className="bg-lightBG hover:scale-[101%] hover:bg-white hover:dark:bg-stone-900 flex flex-col justify-between dark:bg-darkBG rounded-lg border border-stone-200 dark:border-stone-700 text-left cursor-pointer hover:border-green-600 dark:hover:border-green-400 transition-all duration-300 ease-in-out"
             >
               <div className="px-5 py-3">
-                <div className="flex flex-col gap-2 mb-3">
+                <div className="flex flex-row items-start justify-between mb-1">
                   <h3 className="text-lg dm-sans-medium text-black dark:text-white">
                     {repo.name}
                   </h3>
-                  <span className="capitalize text-xs px-3 py-1 text-center w-max dm-sans-regular rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                    {repo.type}
-                  </span>
+                  <p className="dm-sans-light h-max w-max capitalize text-xs px-3 py-1 text-green-700 bg-green-200 rounded-lg dark:text-white">
+                    {formatType(repo?.type)}
+                  </p>
                 </div>
 
                 <p className="text-sm dm-sans-light text-stone-600 dark:text-stone-400 mb-4 line-clamp-2">

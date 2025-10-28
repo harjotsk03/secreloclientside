@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AnimatePresence, motion } from "framer-motion";
 import ThemeToggle from "../general/ThemeToggle";
+import { formatKey } from "../../utils/formatKey";
 import ToggleSideButton from "./ToggleSideButton";
 import { Button } from "../buttons/Button";
 import { BookCheck, Building2, HamIcon, Home, Menu, X } from "lucide-react";
@@ -10,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { ProfileDropDown } from "../modals/ProfileDropDown";
 import { SidebarNav } from "./SidebarNav";
 import { useAuth } from "../../context/AuthContext";
+import { useEncryption } from "../../context/EncryptionContext";
 
 export default function Nav({
   sidebarOpen,
@@ -19,12 +21,14 @@ export default function Nav({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [publicKeyFormatted, setPublicKeyFormatted] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const toggleDrawer = () => setMenuOpen(!menuOpen);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleOpenProfileModal = () => setOpenProfileModal(!openProfileModal);
-  const { user } = useAuth(); // get user
+  const { user, logout } = useAuth();
+  // const { isUnlocked, publicKey, privateKey } = useEncryption();
 
   // deterministic colors based on first letter
   const colors = [
@@ -48,6 +52,18 @@ export default function Nav({
       setShowSideNav(true);
     }
   }, [pathname]);
+
+  // useEffect(() => {
+  //   if (!publicKey) {
+  //     return;
+  //   }
+
+  //   const formatPublicKey = async () => {
+  //     const formattedKey = await formatKey(publicKey);
+  //     setPublicKeyFormatted(formattedKey);
+  //   };
+  //   formatPublicKey();
+  // }, [publicKey]);
 
   return (
     <>
@@ -82,16 +98,33 @@ export default function Nav({
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {/* {publicKey ? (
+            <p className="text-xs">{publicKeyFormatted}</p>
+          ) : (
+            <p>NULL</p>
+          )}
+          {privateKey ? <p className="text-xs">{privateKey}</p> : <p>NULL</p>}
+          {isUnlocked ? <p>TRUE</p> : <p>FALSE</p>} */}
           {!user && (
             <Button onClick={() => router.push("/login")}>Log In</Button>
           )}
           {user?.profile && (
-            <button
-              onClick={() => router.push("/app/profile")}
-              className={`w-9 h-9 flex items-center justify-center rounded-full text-white font-medium text-sm ${profileColor}`}
-            >
-              {profileLetter.toUpperCase()}
-            </button>
+            <div className="flex flex-row gap-2 items-center">
+              <button
+                onClick={() => router.push("/app/profile")}
+                className={`w-9 h-9 flex items-center justify-center rounded-full text-white font-medium text-sm ${profileColor}`}
+              >
+                {profileLetter.toUpperCase()}
+              </button>
+              <Button
+                variant="solid"
+                onClick={() => {
+                  logout();
+                }}
+              >
+                Log Out
+              </Button>
+            </div>
           )}
         </div>
       </div>

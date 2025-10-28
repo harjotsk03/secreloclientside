@@ -15,7 +15,7 @@ export const Button = ({
   const variants = {
     primary: `bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white  `,
     secondary:
-      "bg-stone-500 hover:bg-stone-600 dark:bg-stone-700 dark:hover:bg-stone-800 text-white  ",
+      "bg-stone-200 hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-800 text-black hover:text-white ",
     ghost:
       "bg-transparent hover:bg-stone-200 dark:hover:bg-stone-800 text-gray-700 dark:text-gray-300 border border-stone-300 dark:border-stone-700  ",
     invisible:
@@ -33,10 +33,10 @@ export const Button = ({
   const sizes = {
     xs: "px-2 h-6 text-xs",
     sm: "px-4 h-8 text-xs",
-    md: "px-4 py-2 text-xs w-max",
-    mdFullWidth: "px-4 py-2 text-xs w-full",
-    searchSize: "px-4 py-2 text-xs",
-    lg: "px-4 py-2 text-sm",
+    md: "px-4 py-2 text-xs h-max w-max",
+    mdFullWidth: "px-4 py-2 h-max text-xs w-full",
+    searchSize: "px-4 py-2 h-max text-xs",
+    lg: "px-4 py-2 h-max text-sm",
     chatSize: "px-4 h-9 py-0 text-xs",
     xl: "px-4 py-3 text-xs",
   };

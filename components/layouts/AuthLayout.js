@@ -1,3 +1,4 @@
+// components/layouts/AuthLayout.js
 "use client";
 
 import { useContext, useEffect, useRef, useState } from "react";
@@ -5,23 +6,81 @@ import { useRouter, usePathname } from "next/navigation";
 import Nav from "../nav/Nav";
 import { AlertContext } from "../../context/alertContext";
 import { useAuth } from "../../context/AuthContext";
+import { useEncryption } from "../../context/EncryptionContext";
 
 export default function AuthLayout({ children }) {
   const redirecting = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showSideNav, setShowSideNav] = useState(false);
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [isRestoringSession, setIsRestoringSession] = useState(true); // NEW
+
   const { showAlert } = useContext(AlertContext);
   const { user, logout, loading, setUser } = useAuth();
+  const { isUnlocked } = useEncryption();
   const router = useRouter();
   const pathname = usePathname();
 
   const redirectToLogin = (msg) => {
     const params = new URLSearchParams();
     if (msg) params.set("msg", msg);
-    params.set("from", pathname); // save current page
+    params.set("from", pathname);
     router.push(`/login?${params.toString()}`);
   };
 
+  // ===== ENCRYPTION SESSION CHECK =====
+  useEffect(() => {
+    // Listen for session timeout events from EncryptionContext
+    const handleSessionTimeout = () => {
+      showAlert("Your session has been locked due to inactivity.", "warning");
+      setShowReauthModal(true);
+    };
+
+    window.addEventListener("encryption-session-timeout", handleSessionTimeout);
+
+    return () => {
+      window.removeEventListener(
+        "encryption-session-timeout",
+        handleSessionTimeout
+      );
+    };
+  }, [showAlert]);
+
+  // ===== WAIT FOR SESSION RESTORATION =====
+  useEffect(() => {
+    if (!loading && user?.accessToken) {
+      const hasBackup = sessionStorage.getItem("__pk_backup");
+
+      if (hasBackup && !isUnlocked) {
+        // Give the EncryptionContext time to restore keys from sessionStorage
+        const timeout = setTimeout(() => {
+          setIsRestoringSession(false);
+
+          // If still not unlocked after waiting, show reauth modal
+          if (!isUnlocked) {
+            console.log(
+              "🔒 Session restoration timeout - showing re-auth modal"
+            );
+            setShowReauthModal(true);
+          }
+        }, 500); // Wait 500ms for restoration
+
+        return () => clearTimeout(timeout);
+      } else if (!hasBackup && !isUnlocked) {
+        // No backup exists, session fully expired
+        console.log("🔒 No session backup - redirecting to login");
+        setIsRestoringSession(false);
+        redirecting.current = true;
+        logout();
+        redirectToLogin("Session expired. Please log in again.");
+      } else if (isUnlocked) {
+        // Keys are unlocked, all good
+        setIsRestoringSession(false);
+      }
+    }
+  }, [loading, user?.accessToken, isUnlocked, logout]);
+
+  // ===== JWT TOKEN CHECK =====
   useEffect(() => {
     if (loading) return;
 
@@ -56,7 +115,7 @@ export default function AuthLayout({ children }) {
 
         return newAccessToken;
       } catch (err) {
-        logout(); // cannot refresh → force logout
+        logout();
         return null;
       }
     };
@@ -89,9 +148,9 @@ export default function AuthLayout({ children }) {
         redirectToLogin();
       }
     }
-  }, [user, loading, router, logout]);
+  }, [user, loading, router, logout, setUser]);
 
-  // Sidebar localStorage logic
+  // ===== SIDEBAR LOCALSTORAGE =====
   useEffect(() => {
     const storedSidebar = localStorage.getItem("sidebarOpen");
     if (storedSidebar !== null) setSidebarOpen(storedSidebar === "true");
@@ -101,7 +160,18 @@ export default function AuthLayout({ children }) {
     localStorage.setItem("sidebarOpen", sidebarOpen.toString());
   }, [sidebarOpen]);
 
-  if (loading) return <div>Loading...</div>;
+  // Show loading while restoring session
+  if (loading || isRestoringSession) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user?.accessToken) return null;
 
   return (

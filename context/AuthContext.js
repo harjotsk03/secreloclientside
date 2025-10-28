@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { AlertContext } from "./alertContext";
+import { useEncryption } from "./EncryptionContext";
 
 const AuthContext = createContext();
 
@@ -42,14 +43,56 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (profile, accessToken, refreshToken) => {
+  const login = async (
+    profile,
+    accessToken,
+    refreshToken,
+    privateKey,
+    publicKey
+  ) => {
     setUser({ profile, accessToken, refreshToken });
     resetIdleTimer(accessToken);
+
+    if (!privateKey || !publicKey) {
+      console.warn("Missing encryption keys for this user");
+      return;
+    }
+
+    // Wait for sodium to be ready
+    await sodium.ready;
+
+    // Generate a fresh session key for this session
+    const sessionKey = sodium.randombytes_buf(32);
+    sessionStorage.setItem(
+      "__session_key",
+      sodium.to_base64(sessionKey, sodium.base64_variants.ORIGINAL)
+    );
+
+    // Encrypt & store the private key backup using the new session key
+    const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+    const ciphertext = sodium.crypto_secretbox_easy(
+      privateKey,
+      nonce,
+      sessionKey
+    );
+
+    const backup = {
+      pub: sodium.to_base64(publicKey, sodium.base64_variants.ORIGINAL),
+      priv: sodium.to_base64(ciphertext, sodium.base64_variants.ORIGINAL),
+      nonce: sodium.to_base64(nonce, sodium.base64_variants.ORIGINAL),
+    };
+
+    sessionStorage.setItem("__enc_backup", JSON.stringify(backup));
+
+    // Set encryption keys in context
+    setEncryptionKeys(publicKey, privateKey);
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("user");
     clearTimeout(timeoutRef.current);
+    sessionStorage.removeItem("__session_key");
     showAlert("Logged out", "error");
   };
 
@@ -95,7 +138,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const refreshAccessToken = async (refreshToken) => {
-    console.log(calling, refreshToken);
     if (!refreshToken) return null;
 
     try {

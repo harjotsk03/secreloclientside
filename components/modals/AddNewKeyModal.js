@@ -1,83 +1,71 @@
 import { motion } from "framer-motion";
-import { useContext, useEffect, useState } from "react";
-import { AlertContext } from "../../context/alertContext";
 import { useRouter } from "next/router";
+import { KeySquare, Folder } from "lucide-react";
 import { Button } from "../buttons/Button";
-import { Briefcase, Building, Building2, Building2Icon, FileText, Folder, KeySquare, Mail, MapPin } from "lucide-react";
-import { TextInput } from "../inputs/TextInput";
-import { Select } from "../inputs/Select";
-import { DatePicker } from "../inputs/DatePicker";
 
-export default function AddNewKeyModal() {
+export default function AddNewKeyModal({
+  setShowCreateKeyModal,
+  setShowCreateKeyModalSingle,
+}) {
   const router = useRouter();
-  const { showAlert } = useContext(AlertContext);
-  const [loading, setLoading] = useState(false);
 
-  const secretTypeOptions = [
-    { label: "API Key", value: "api_key" },
-    { label: "OAuth Token", value: "oauth_token" },
-    { label: "Client Secret", value: "client_secret" },
-    { label: "Database Connection String", value: "db_connection" },
-    { label: "SSH Private Key", value: "ssh_key" },
-    { label: "Webhook Secret", value: "webhook_secret" },
-    { label: "Cloud Storage Keypair", value: "cloud_keypair" },
-    { label: "JWT Signing Key", value: "jwt_key" },
-    { label: "Custom Secret", value: "custom_secret" },
-  ];
-
+  const handleSelect = (mode) => {
+    if (mode === "multi") {
+      router.push("/upload-env");
+    } else {
+      setShowCreateKeyModal(false);
+      setShowCreateKeyModalSingle(true);
+    }
+  };
 
   return (
     <motion.div
-      className="relative z-50 w-11/12 lg:w-1/3 px-8 lg:px-12 pt-6 lg:pt-8 pb-8 lg:pb-12 h-max rounded-xl bg-white dark:bg-darkBG"
-      initial={{ scale: 0.95 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.95 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="relative z-50 w-11/12 lg:w-1/3 px-8 lg:px-12 pt-8 pb-10 rounded-2xl bg-white dark:bg-darkBG shadow-xl"
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.95, opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
     >
-      <div className="flex flex-col justify-between w-full items-start">
-        <div className="flex flex-col">
-          <p className="dm-sans-regular text-lg lg:text-xl text-black dark:text-white">
-            Adding New Secret
-          </p>
-        </div>
-        <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/30 mt-1 mb-4">
-          Secure and add your secret to share with repo members.
+      {/* Header */}
+      <div className="flex flex-col items-center text-center mb-8">
+        <p className="dm-sans-regular text-lg lg:text-xl text-black dark:text-white">
+          Add a New Secret
+        </p>
+        <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/40 mt-2 max-w-sm">
+          Choose how you want to add your secrets. You can add one manually or
+          upload multiple from an environment file.
         </p>
       </div>
-      <div className="flex flex-col gap-4 w-full">
-        <TextInput
-          label="Secret Name"
-          required={true}
-          placeholder="Secret Name"
-          icon={KeySquare}
-          // error={emailError}
-        />
-        <Select
-          label="Secret Type"
-          required={true}
-          placeholder="Secret Type"
-          icon={KeySquare}
-          options={secretTypeOptions}
-          // error={emailError}
-        />
-        <DatePicker label={"Key Auto Kill Date"} />
-        <TextInput
-          required={true}
-          multiline={true}
-          label="Description"
-          placeholder="Description"
-          icon={FileText}
-          // error={emailError}
-        />
-        <Button
-          onClick={() => {
-            showAlert("LOL");
-          }}
-          size="xl"
-          variant="solid"
+
+      {/* Buttons Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Single Secret */}
+        <motion.button
+          onClick={() => handleSelect("single")}
+          className="flex flex-col items-center justify-center gap-1 p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
         >
-          Create company
-        </Button>
+          <KeySquare className="w-7 h-7 text-black/80 dark:text-white/80" />
+          <span className="dm-sans-regular text-sm text-black dark:text-white mt-3">
+            Single Creation
+          </span>
+          <span className="dm-sans-light text-xs text-stone-500 dark:text-white">
+            Upload one secret to the repo.
+          </span>
+        </motion.button>
+
+        {/* Multi Secret Upload */}
+        <motion.button
+          onClick={() => handleSelect("multi")}
+          className="flex flex-col items-center justify-center gap-1 p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+        >
+          <Folder className="w-7 h-7 text-black/80 dark:text-white/80" />
+          <span className="dm-sans-regular text-sm text-black dark:text-white mt-3">
+            Multi Upload
+          </span>
+          <span className="dm-sans-light text-xs text-stone-500 dark:text-white">
+            Upload multiple secrets from a .env file.
+          </span>
+        </motion.button>
       </div>
     </motion.div>
   );

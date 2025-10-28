@@ -5,8 +5,8 @@ import {
   Home,
   Key,
   LayoutDashboard,
+  LogOut,
   ScanEye,
-
   User,
   UserRoundSearch,
   Users,
@@ -14,6 +14,7 @@ import {
 import { SidebarNavButton } from "../buttons/SidebarNavButton";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { Button } from "../buttons/Button";
 
 export const SidebarNav = ({ sidebarOpen, toggleSidebar }) => {
   const router = useRouter();
@@ -139,6 +140,7 @@ export const SidebarNav = ({ sidebarOpen, toggleSidebar }) => {
         label="Profile"
         icon={User}
       />
+
       {/* <SidebarNavButton
         sidebarOpen={sidebarOpen}
         path={"dashboard"}

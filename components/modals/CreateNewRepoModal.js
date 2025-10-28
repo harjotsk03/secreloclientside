@@ -8,6 +8,7 @@ import { Folder, FileText } from "lucide-react";
 import { TextInput } from "../inputs/TextInput";
 import { Select } from "../inputs/Select";
 import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function CreateNewRepoModal({
   setShowCreateRepoModal,
@@ -15,7 +16,7 @@ export default function CreateNewRepoModal({
 }) {
   const { authPost } = useAuth();
   const { showAlert } = useContext(AlertContext);
-
+  const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [repoType, setRepoType] = useState("");
@@ -70,15 +71,14 @@ export default function CreateNewRepoModal({
 
       showAlert("Repo created successfully!", "success");
       setShowCreateRepoModal(false);
-
       // Update parent state
       setRepos((prev) => [data.repo, ...prev]);
-
       // Reset form
       setName("");
       setDescription("");
       setRepoType("");
       setUserRole("");
+      router.push(`/app/repos/`);
     } catch (err) {
       console.error(err);
       showAlert(err.message || "Failed to create repo", "error");

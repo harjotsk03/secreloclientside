@@ -19,7 +19,9 @@ export function DatePicker({ label, required=false, date, setDate, disabled }) {
       <button
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`${disabled ? "opacity-50 hover:cursor-not-allowed" : "opacity-100"} w-full flex items-center justify-between px-4 py-2 text-black bg-white dark:bg-darkBG3 dark:text-white transition-colors border border-stone-200 dark:border-stone-800 focus:border-black focus:dark:border-stone-500 focus:ring-transparent focus:outline-none focus:ring-0 rounded-lg text-sm`}
+        className={`${
+          disabled ? "opacity-50 hover:cursor-not-allowed" : "opacity-100"
+        } w-full flex items-center justify-between px-4 py-2 text-black bg-white dark:bg-darkBG3 dark:text-white transition-colors border border-stone-200 dark:border-stone-800 focus:border-black focus:dark:border-stone-500 focus:ring-transparent focus:outline-none focus:ring-0 rounded-lg text-sm`}
       >
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-4 w-4" />

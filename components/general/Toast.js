@@ -28,11 +28,7 @@ export default function Toast() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div
-      className="fixed top-2 right-2 lg:top-4 lg:right-4 z-50 flex flex-col gap-2"
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-    >
+    <div className="fixed top-2 right-2 lg:top-4 lg:right-4 z-50 flex flex-col gap-2">
       <AnimatePresence initial={false}>
         {alerts.map((alert, index) => (
           <motion.div
@@ -42,7 +38,7 @@ export default function Toast() {
               ${toastStyles[alert.type]}
             `}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: expanded ? index * 60 : 0 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 0 }}
             transition={{ duration: 0.4 }}
           >
