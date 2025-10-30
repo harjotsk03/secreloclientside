@@ -8,6 +8,7 @@ export function EncryptionProvider({ children }) {
   const [privateKey, setPrivateKey] = useState(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [sessionKey, setSessionKey] = useState(null);
+  const [isSessionKeyReady, setIsSessionKeyReady] = useState(false);
 
   const decryptedKeysCache = useRef(new Map());
   const lastActivityRef = useRef(Date.now());
@@ -15,36 +16,61 @@ export function EncryptionProvider({ children }) {
 
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
-  // ===== INITIALIZE sodium and session key =====
+  // ===== INITIALIZE sodium and session key (SYNCHRONOUSLY) =====
   useEffect(() => {
-    (async () => {
-      await sodium.ready;
+    let mounted = true;
 
-      const existingKey = sessionStorage.getItem("__session_key");
-      if (existingKey) {
-        setSessionKey(
-          sodium.from_base64(existingKey, sodium.base64_variants.ORIGINAL)
-        );
-        console.log("🧩 Restored existing session key");
-      } else {
-        const key = sodium.randombytes_buf(32);
-        setSessionKey(key);
-        sessionStorage.setItem(
-          "__session_key",
-          sodium.to_base64(key, sodium.base64_variants.ORIGINAL)
-        );
-        console.log("🧩 New session key generated");
+    (async () => {
+      try {
+        await sodium.ready;
+
+        if (!mounted) return;
+
+        const existingKey = sessionStorage.getItem("__session_key");
+        let key;
+
+        if (existingKey) {
+          key = sodium.from_base64(
+            existingKey,
+            sodium.base64_variants.ORIGINAL
+          );
+          console.log("🧩 Restored existing session key");
+        } else {
+          key = sodium.randombytes_buf(32);
+          sessionStorage.setItem(
+            "__session_key",
+            sodium.to_base64(key, sodium.base64_variants.ORIGINAL)
+          );
+          console.log("🧩 New session key generated");
+        }
+
+        if (mounted) {
+          setSessionKey(key);
+          setIsSessionKeyReady(true);
+        }
+      } catch (err) {
+        console.error("❌ Failed to initialize session key:", err);
+        if (mounted) {
+          setIsSessionKeyReady(true); // Still set ready to prevent infinite loading
+        }
       }
     })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-
-  // ===== RESTORE KEYS FROM SESSION =====
+  // ===== RESTORE KEYS FROM SESSION (only after session key is ready) =====
   useEffect(() => {
+    if (!isSessionKeyReady || !sessionKey) return;
+
     (async () => {
-      if (!sessionKey) return; // wait for key ready
       const backup = sessionStorage.getItem("__enc_backup");
-      if (!backup) return;
+      if (!backup) {
+        console.log("ℹ️ No encryption backup found in session");
+        return;
+      }
 
       try {
         await sodium.ready;
@@ -75,15 +101,23 @@ export function EncryptionProvider({ children }) {
           console.log("🔐 Session keys restored from sessionStorage");
         }
       } catch (err) {
-        console.warn("❌ Failed to restore session keys", err);
+        console.error("❌ Failed to restore session keys:", err);
+        // Clear corrupted backup
+        sessionStorage.removeItem("__enc_backup");
+        sessionStorage.removeItem("__pk_backup");
       }
     })();
-  }, [sessionKey]);
+  }, [sessionKey, isSessionKeyReady]);
 
   const updateActivity = () => (lastActivityRef.current = Date.now());
 
   // ===== SET KEYS AND BACKUP =====
   const setEncryptionKeys = async (pubKey, privKey) => {
+    if (!isSessionKeyReady || !sessionKey) {
+      console.error("❌ Cannot set keys: session key not ready");
+      throw new Error("Session key not initialized");
+    }
+
     await sodium.ready;
     setPublicKey(pubKey);
     setPrivateKey(privKey);
@@ -92,8 +126,8 @@ export function EncryptionProvider({ children }) {
 
     console.log("🔐 Encryption keys loaded into memory");
 
-    // Encrypt and store in sessionStorage
-    if (sessionKey) {
+    try {
+      // Encrypt and store in sessionStorage
       const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
       const ciphertext = sodium.crypto_secretbox_easy(
         privKey,
@@ -111,6 +145,9 @@ export function EncryptionProvider({ children }) {
       sessionStorage.setItem("__pk_backup", "true");
 
       console.log("💾 Session backup stored securely");
+    } catch (err) {
+      console.error("❌ Failed to backup keys:", err);
+      throw err;
     }
   };
 
@@ -159,6 +196,7 @@ export function EncryptionProvider({ children }) {
     publicKey,
     privateKey,
     isUnlocked,
+    isSessionKeyReady,
     setEncryptionKeys,
     clearEncryptionKeys,
     updateActivity,

@@ -23,17 +23,33 @@ export default function Login() {
   const { showAlert } = useContext(AlertContext);
   const params = useSearchParams();
   const alertShown = useRef(false);
-  const { setEncryptionKeys } = useEncryption();
+  const { setEncryptionKeys, isSessionKeyReady } = useEncryption();
 
+  // Get params
   const from = params.get("from");
   const msg = params.get("msg");
 
+  // All hooks MUST come before any conditional returns
   useEffect(() => {
     if (msg && !alertShown.current) {
       alertShown.current = true;
       showAlert(msg, "error");
     }
   }, [msg, showAlert]);
+
+  // NOW we can do conditional rendering
+  if (!isSessionKeyReady) {
+    return (
+      <Layout>
+        <div className="w-full h-[85vh] flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Initializing security...
+          </p>
+        </div>
+      </Layout>
+    );
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -48,6 +64,22 @@ export default function Login() {
     }
 
     try {
+      // Wait for session key to be ready
+      if (!isSessionKeyReady) {
+        setDecryptionStatus("Initializing security...");
+        // Wait up to 5 seconds for session key
+        const startTime = Date.now();
+        while (!isSessionKeyReady && Date.now() - startTime < 5000) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        if (!isSessionKeyReady) {
+          throw new Error(
+            "Failed to initialize encryption. Please refresh and try again."
+          );
+        }
+      }
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/login`,
         {
@@ -119,8 +151,18 @@ export default function Login() {
 
       // STEP 3: THEN set encryption keys (now that user is authenticated)
       if (privateKey && publicKey) {
-        setEncryptionKeys(publicKey, privateKey);
-        console.log("🔐 Encryption keys stored in memory");
+        try {
+          await setEncryptionKeys(publicKey, privateKey);
+          console.log("🔐 Encryption keys stored in memory");
+        } catch (err) {
+          console.error("Failed to store encryption keys:", err);
+          showAlert(
+            "Failed to initialize encryption. Please try logging in again.",
+            "error"
+          );
+          setLoading(false);
+          return;
+        }
       }
 
       showAlert("Logged in successfully!", "success");
@@ -130,7 +172,7 @@ export default function Login() {
       else router.push("/app/repos");
     } catch (err) {
       console.error(err);
-      showAlert("Failed to log in. Please try again.", "error");
+      showAlert(err.message || "Failed to log in. Please try again.", "error");
     } finally {
       setLoading(false);
       setDecryptionStatus("");

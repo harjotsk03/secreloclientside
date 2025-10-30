@@ -93,6 +93,7 @@ export default function AddNewKeyModalSingle({
         description: description || "",
         nonce: encryptedData.secret_nonce,
         encrypted_secret: encryptedData.ciphertext_secret,
+        encrypted_user_keys: encryptedData.encrypted_keys,
         repo_id: id,
       };
 

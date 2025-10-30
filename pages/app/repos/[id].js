@@ -4,14 +4,11 @@ import { Button } from "../../../components/buttons/Button";
   import { encryptSecret } from "../../../utils/encryptSecret";
   import { BackButton } from "../../../components/buttons/BackButton";
   import {
-    Copy,
-    KeySquare,
     PlusCircle,
     Search,
     UserPlus2,
     Check,
     X,
-    BookText,
     Pen,
     FolderOutput,
   } from "lucide-react";
@@ -27,9 +24,7 @@ import { Button } from "../../../components/buttons/Button";
   import InviteUserModal from "../../../components/modals/InviteUserModal";
   import AddNewKeyModalSingle from "../../../components/modals/AddNewKeyModalSingle";
   import { useEncryption } from "../../../context/EncryptionContext";
-  import { formatDateTime } from "../../../utils/formatDateTime";
-  import { decryptSecret } from "../../../utils/decryptSecret";
-  import { formatSecretType } from "../../../utils/formatSecretType";
+  import SecretCard from "../../../components/cards/SecretCard";
 
   export default function RouteDetailsPage() {
     const router = useRouter();
@@ -44,11 +39,10 @@ import { Button } from "../../../components/buttons/Button";
     const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
     const [showKeyDetailsModal, setShowKeyDetailsModal] = useState(false);
     const [showMemberDetailsModal, setShowMemberDetailsModal] = useState(false);
-    const [activeKey, setActiveKey] = useState("");
+    const [activeKey, setActiveKey] = useState(null);
     const [activeMember, setActiveMember] = useState("");
     const { user, authFetch, loading } = useAuth();
     const [showInviteMemberModal, setShowInviteMemberModal] = useState(false);
-    const { publicKey, privateKey } = useEncryption();
 
     const currentMember = repoMembers.find(
       (m) => m.user_id === user?.profile?.id
@@ -158,7 +152,12 @@ import { Button } from "../../../components/buttons/Button";
                   setShowKeyDetailsModal(false);
                 }}
               />
-              <ViewKeyDetailsModal keyData={activeKey} />
+              <ViewKeyDetailsModal
+                setSecrets={setSecrets}
+                keyData={activeKey}
+                currentMember={currentMember}
+                setShowKeyDetailsModal={setShowKeyDetailsModal}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -272,46 +271,13 @@ import { Button } from "../../../components/buttons/Button";
               <div className="w-full h-[63vh] overflow-y-auto flex flex-col">
                 <div className="flex flex-col gap-4">
                   {secrets.map((secret) => (
-                    <div
-                      key={secret.id}
-                      className="flex text-left px-6 py-4 bg-stone-100/80 group justify-between rounded-xl transition-all duration-500"
-                    >
-                      <div>
-                        <p className="text-base dm-sans-semibold text-black dark:text-white">
-                          {secret.name}{" "}
-                          <span className="text-xs dm-sans-light text-green-700 dark:text-white mt-1">
-                            {" "}
-                            ({formatSecretType(secret.type)})
-                          </span>
-                        </p>
-                        <p className="text-xs text-stone-600 dark:text-stone-400 mt-1">
-                          {secret.description}
-                        </p>
-                        <div className="mt-2 text-xs text-stone-400/80 dark:text-stone-400 flex flex-row gap-2">
-                          <p>
-                            Last updated: {formatDateTime(secret.updated_at)} by{" "}
-                            {secret.updated_by_name}
-                          </p>
-                          <p>-</p>
-                          <p>Version: {secret.version}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-row justify-between gap-2 items-start">
-                        <Button size="sm" variant="ghost" icon={Copy}>
-                          Copy
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setActiveKey(secret);
-                            setShowKeyDetailsModal(true);
-                          }}
-                          size="sm"
-                          icon={BookText}
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
+                    <SecretCard
+                      key={secret?.id}
+                      secret={secret}
+                      setActiveKey={setActiveKey}
+                      setShowKeyDetailsModal={setShowKeyDetailsModal}
+                      currentMember={currentMember}
+                    />
                   ))}
                 </div>
               </div>

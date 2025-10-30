@@ -38,7 +38,7 @@ export const Button = ({
     searchSize: "px-4 py-2 h-max text-xs",
     lg: "px-4 py-2 h-max text-sm",
     chatSize: "px-4 h-9 py-0 text-xs",
-    xl: "px-4 py-3 text-xs",
+    xl: "px-4 py-3 h-10 text-xs",
   };
 
   return (

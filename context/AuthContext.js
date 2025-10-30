@@ -240,6 +240,43 @@ export const AuthProvider = ({ children }) => {
     return data;
   }
 
+  async function authDelete(url, options = {}) {
+    // Ensure we have a valid access token
+    let token = user?.accessToken;
+    if (!token) throw new Error("No access token available");
+
+    // Build request options
+    let fetchOptions = {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    let res = await fetch(url, fetchOptions);
+    let data = await res.json().catch(() => ({})); // handle cases with no JSON body
+
+    // Handle expired access token
+    if (res.status === 401 && user?.refreshToken) {
+      token = await refreshAccessToken(user.refreshToken);
+      if (token) {
+        fetchOptions.headers.Authorization = `Bearer ${token}`;
+        res = await fetch(url, fetchOptions);
+        data = await res.json().catch(() => ({}));
+      }
+    }
+
+    // Throw on error responses
+    if (!res.ok) {
+      throw new Error(data.message || "Delete request failed");
+    }
+
+    return data;
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -250,6 +287,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         authFetch,
         authPost,
+        authDelete,
         refreshAccessToken,
       }}
     >
