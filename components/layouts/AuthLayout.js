@@ -61,7 +61,11 @@ export default function AuthLayout({ children }) {
             console.log(
               "🔒 Session restoration timeout - showing re-auth modal"
             );
-            setShowReauthModal(true);
+            showAlert(
+              "Your session has been locked due to inactivity.",
+              "warning"
+            );
+            logout();
           }
         }, 500); // Wait 500ms for restoration
 

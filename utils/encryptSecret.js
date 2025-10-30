@@ -1,43 +1,76 @@
 import * as sodium from "libsodium-wrappers-sumo";
 
 /**
- * Encrypt a secret secret using a recipient's public key.
- * Generates an ephemeral keypair for sender authenticity.
+ * Hybrid encryption: Encrypts a secret with a symmetric key (DEK),
+ * then encrypts that DEK with each user's public key.
  *
- * @param {string|Uint8Array} secret - The plaintext to encrypt.
- * @param {string|Uint8Array} recipientPublicKey - Recipient's public key (base64 or Uint8Array).
- * @returns {Promise<{ ciphertext: string, nonce: string, sender_public_key: string }>}
+ * @param {string} secret - The plaintext secret to encrypt.
+ * @param {Array<{ user_id: string, public_key: string | Uint8Array }>} recipients - Array of user objects.
+ * @returns {Promise<{
+ *   ciphertext_secret: string,
+ *   secret_nonce: string,
+ *   encrypted_keys: Array<{ user_id: string, encrypted_key: string, nonce: string, sender_public_key: string }>
+ * }>}
  */
-export async function encryptSecret(secret, recipientPublicKey) {
+export async function encryptSecret(secret, recipients) {
   await sodium.ready;
 
-  // Normalize inputs
-  const msgBytes = sodium.from_string(secret);
-  const pubKeyBytes =
-    recipientPublicKey instanceof Uint8Array
-      ? recipientPublicKey
-      : sodium.from_base64(recipientPublicKey, sodium.base64_variants.ORIGINAL);
+  // 1️⃣ Generate a random symmetric DEK (Data Encryption Key)
+  const dek = sodium.randombytes_buf(sodium.crypto_secretbox_KEYBYTES);
 
-  // Generate an ephemeral sender keypair
-  const ephemeralKeyPair = sodium.crypto_box_keypair();
-
-  // Create a nonce (must be unique per secret)
-  const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-
-  // Encrypt using crypto_box (public-key authenticated encryption)
-  const ciphertext = sodium.crypto_box_easy(
-    msgBytes,
-    nonce,
-    pubKeyBytes,
-    ephemeralKeyPair.privateKey
+  // 2️⃣ Encrypt the secret using the DEK
+  const secretNonce = sodium.randombytes_buf(
+    sodium.crypto_secretbox_NONCEBYTES
+  );
+  const ciphertextSecret = sodium.crypto_secretbox_easy(
+    sodium.from_string(secret),
+    secretNonce,
+    dek
   );
 
+  // 3️⃣ For each recipient, encrypt the DEK using their public key
+  const encryptedKeys = await Promise.all(
+    recipients.map(async ({ user_id, public_key }) => {
+      const pubKeyBytes =
+        public_key instanceof Uint8Array
+          ? public_key
+          : sodium.from_base64(public_key, sodium.base64_variants.ORIGINAL);
+
+      const ephemeralKeyPair = sodium.crypto_box_keypair();
+      const keyNonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
+
+      const encryptedKey = sodium.crypto_box_easy(
+        dek,
+        keyNonce,
+        pubKeyBytes,
+        ephemeralKeyPair.privateKey
+      );
+
+      return {
+        user_id,
+        encrypted_key: sodium.to_base64(
+          encryptedKey,
+          sodium.base64_variants.ORIGINAL
+        ),
+        nonce: sodium.to_base64(keyNonce, sodium.base64_variants.ORIGINAL),
+        sender_public_key: sodium.to_base64(
+          ephemeralKeyPair.publicKey,
+          sodium.base64_variants.ORIGINAL
+        ),
+      };
+    })
+  );
+
+  // 4️⃣ Return everything needed for storage / distribution
   return {
-    ciphertext: sodium.to_base64(ciphertext, sodium.base64_variants.ORIGINAL),
-    nonce: sodium.to_base64(nonce, sodium.base64_variants.ORIGINAL),
-    sender_public_key: sodium.to_base64(
-      ephemeralKeyPair.publicKey,
+    ciphertext_secret: sodium.to_base64(
+      ciphertextSecret,
       sodium.base64_variants.ORIGINAL
     ),
+    secret_nonce: sodium.to_base64(
+      secretNonce,
+      sodium.base64_variants.ORIGINAL
+    ),
+    encrypted_keys: encryptedKeys,
   };
 }

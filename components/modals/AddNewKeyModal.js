@@ -20,7 +20,7 @@ export default function AddNewKeyModal({
 
   return (
     <motion.div
-      className="relative z-50 w-11/12 lg:w-1/3 px-8 lg:px-12 pt-8 pb-10 rounded-2xl bg-white dark:bg-darkBG shadow-xl"
+      className="relative z-50 w-11/12 lg:w-1/2 xl:w-1/3 px-8 lg:px-12 pt-8 pb-10 rounded-2xl bg-white dark:bg-darkBG shadow-xl"
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.95, opacity: 0 }}

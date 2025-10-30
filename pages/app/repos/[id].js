@@ -27,8 +27,9 @@ import { Button } from "../../../components/buttons/Button";
   import InviteUserModal from "../../../components/modals/InviteUserModal";
   import AddNewKeyModalSingle from "../../../components/modals/AddNewKeyModalSingle";
   import { useEncryption } from "../../../context/EncryptionContext";
-  import { formatKey } from "../../../utils/formatKey";
+  import { formatDateTime } from "../../../utils/formatDateTime";
   import { decryptSecret } from "../../../utils/decryptSecret";
+  import { formatSecretType } from "../../../utils/formatSecretType";
 
   export default function RouteDetailsPage() {
     const router = useRouter();
@@ -79,36 +80,23 @@ import { Button } from "../../../components/buttons/Button";
     const activeMembers = repoMembers.filter((m) => m.status !== "pending");
 
     useEffect(() => {
-      if (!publicKey || !privateKey) return;
+      if (!user) return;
+      if (!id) return;
+      const fetchSecrets = async () => {
+        try {
+          const res = await authFetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/${id}/secrets`
+          );
+          const data = await res.data;
 
-      const runEncryptionDemo = async () => {
-        // Step 1: Format the public key
-        const formattedKey = await formatKey(publicKey);
-
-        // Step 2: Encrypt a secret
-        const secret = "mydb.crumac26k499.ca-central-1.rds.amazonaws.com";
-        const encrypted = await encryptSecret(secret, formattedKey);
-
-        console.log("🔒 Ciphertext:", encrypted.ciphertext);
-        console.log("🔒 Nonce:", encrypted.nonce);
-        console.log("🔒 Sender Public Key:", encrypted.sender_public_key);
-
-        // Step 3: Wait 3 seconds
-        await new Promise((res) => setTimeout(res, 3000));
-
-        // Step 4: Decrypt using privateKey
-        const decrypted = await decryptSecret(
-          privateKey,
-          encrypted.ciphertext,
-          encrypted.nonce,
-          encrypted.sender_public_key
-        );
-
-        console.log("🔓 Decrypted Secret:", decrypted);
+          setSecrets(data);
+        } catch (err) {
+          console.error("Error fetching secrets:", err);
+        }
       };
 
-      runEncryptionDemo();
-    }, [publicKey, privateKey]);
+      fetchSecrets();
+    }, [id, user]);
 
     return (
       <>
@@ -147,6 +135,7 @@ import { Button } from "../../../components/buttons/Button";
                 onClick={() => setShowCreateKeyModalSingle(false)}
               />
               <AddNewKeyModalSingle
+                setSecrets={setSecrets}
                 setShowCreateKeyModal={setShowCreateKeyModal}
                 setShowCreateKeyModalSingle={setShowCreateKeyModalSingle}
               />
@@ -285,22 +274,26 @@ import { Button } from "../../../components/buttons/Button";
                   {secrets.map((secret) => (
                     <div
                       key={secret.id}
-                      className="flex text-left group justify-between rounded-md transition-all duration-500"
+                      className="flex text-left px-6 py-4 bg-stone-100/80 group justify-between rounded-xl transition-all duration-500"
                     >
                       <div>
                         <p className="text-base dm-sans-semibold text-black dark:text-white">
-                          {secret.keyName}
+                          {secret.name}{" "}
+                          <span className="text-xs dm-sans-light text-green-700 dark:text-white mt-1">
+                            {" "}
+                            ({formatSecretType(secret.type)})
+                          </span>
                         </p>
                         <p className="text-xs text-stone-600 dark:text-stone-400 mt-1">
                           {secret.description}
                         </p>
                         <div className="mt-2 text-xs text-stone-400/80 dark:text-stone-400 flex flex-row gap-2">
                           <p>
-                            Last updated{" "}
-                            {new Date(secret.lastUpdated).toLocaleDateString()}
+                            Last updated: {formatDateTime(secret.updated_at)} by{" "}
+                            {secret.updated_by_name}
                           </p>
                           <p>-</p>
-                          <p>{secret.version}</p>
+                          <p>Version: {secret.version}</p>
                         </div>
                       </div>
                       <div className="flex flex-row justify-between gap-2 items-start">

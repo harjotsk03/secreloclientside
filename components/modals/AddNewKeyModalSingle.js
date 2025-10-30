@@ -3,30 +3,34 @@ import { useContext, useEffect, useState } from "react";
 import { AlertContext } from "../../context/alertContext";
 import { useRouter } from "next/router";
 import { Button } from "../buttons/Button";
-import {
-  ArrowLeft,
-  Briefcase,
-  Building,
-  Building2,
-  Building2Icon,
-  FileText,
-  Folder,
-  KeySquare,
-  Mail,
-  MapPin,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { TextInput } from "../inputs/TextInput";
 import { Select } from "../inputs/Select";
-import { DatePicker } from "../inputs/DatePicker";
+import { PasswordInput } from "../inputs/PasswordInput";
+import { useEncryption } from "../../context/EncryptionContext";
+import { encryptSecret } from "../../utils/encryptSecret";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AddNewKeyModalSingle({
+  setSecrets,
   setShowCreateKeyModal,
   setShowCreateKeyModalSingle,
 }) {
   const router = useRouter();
+  const { id } = router.query;
   const { showAlert } = useContext(AlertContext);
   const [loading, setLoading] = useState(false);
+  const { user, authFetch, authPost } = useAuth();
 
+  // 🔹 Local state
+  const [encryptedData, setEncryptedData] = useState(null);
+  const [secret, setSecret] = useState("");
+  const [secretName, setSecretName] = useState("");
+  const [secretType, setSecretType] = useState("");
+  const [description, setDescription] = useState("");
+  const [users, setUsers] = useState([]);
+
+  // 🔹 Secret type options
   const secretTypeOptions = [
     { label: "API Key", value: "api_key" },
     { label: "OAuth Token", value: "oauth_token" },
@@ -39,9 +43,93 @@ export default function AddNewKeyModalSingle({
     { label: "Custom Secret", value: "custom_secret" },
   ];
 
+  // 🔹 Fetch user IDs & public keys from backend
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/${id}/userKeys`
+        );
+        const data = await res.data;
+
+        if (Array.isArray(data)) setUsers(data);
+        else console.error("Unexpected user data:", data);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      }
+    };
+
+    fetchUsers();
+  }, [id]);
+
+  useEffect(() => {
+    const runEncryption = async () => {
+      if (!secret || users.length === 0) return;
+      try {
+        console.log(users);
+        const encryptedData = await encryptSecret(secret, users);
+        console.log("🔐 Encrypted Hybrid Data:", encryptedData);
+        setEncryptedData(encryptedData);
+      } catch (err) {
+        console.error("Encryption error:", err);
+      }
+    };
+    runEncryption();
+  }, [secret, users]);
+
+  // 🔹 Handle Create Secret
+  const handleCreateSecret = async () => {
+    if (!secretName || !secretType || !secret || !encryptedData) {
+      showAlert("Please fill all required fields.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const body = {
+        name: secretName,
+        type: secretType,
+        description: description || "",
+        nonce: encryptedData.secret_nonce,
+        encrypted_secret: encryptedData.ciphertext_secret,
+        repo_id: id,
+      };
+
+      console.log(body);
+
+      const data = await authPost(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/secrets/createSecret`,
+        body
+      );
+
+      console.log(data);
+      if (data.secret) {
+        const newSecret = {
+          ...data.secret,
+          updated_by_name: user?.profile?.full_name,
+        };
+        setSecrets((prev) => [newSecret, ...prev]);
+      }
+      if (data.message == "Secret created successfully.") {
+        showAlert("Secret successfully created!", "success");
+        setShowCreateKeyModalSingle(false);
+        setShowCreateKeyModal(false);
+      } else {
+        console.error("Error saving secret:", data);
+        showAlert("Failed to create secret.");
+      }
+    } catch (err) {
+      console.error("Encryption or saving error:", err);
+      showAlert("An error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
-      className="relative z-50 w-11/12 lg:w-1/3 px-8 lg:px-12 pt-6 lg:pt-8 pb-8 lg:pb-12 h-max rounded-xl bg-white dark:bg-darkBG"
+      className="relative z-50 w-11/12 lg:w-1/2 xl:w-1/3 px-8 xl:px-12 pt-6 xl:pt-8 pb-8 xl:pb-12 h-max rounded-xl bg-white dark:bg-darkBG"
       initial={{ scale: 0.95 }}
       animate={{ scale: 1 }}
       exit={{ scale: 0.95 }}
@@ -60,9 +148,10 @@ export default function AddNewKeyModalSingle({
         />{" "}
         Back
       </button>
+
       <div className="flex mt-2 flex-col justify-between w-full items-start">
         <div className="flex flex-col">
-          <p className="dm-sans-regular text-lg lg:text-xl text-black dark:text-white">
+          <p className="dm-sans-regular text-lg xl:text-xl text-black dark:text-white">
             Adding New Secret
           </p>
         </div>
@@ -70,43 +159,50 @@ export default function AddNewKeyModalSingle({
           Secure and add your secret to share with repo members.
         </p>
       </div>
-      <div className="flex flex-col gap-4 w-full">
+
+      <div className="flex flex-col gap-2 xl:gap-4 w-full">
         <TextInput
           label="Secret Name"
-          required={true}
+          required
           placeholder="Secret Name"
-          // error={emailError}
+          value={secretName}
+          onChange={setSecretName}
         />
-        <div className="flex flex-col lg:flex-row lg:gap-2">
+
+        <div className="flex flex-col xl:flex-row gap-2 xl:gap-4">
           <Select
             label="Secret Type"
-            required={true}
+            required
             placeholder="Secret Type"
             options={secretTypeOptions}
-            // error={emailError}
+            value={secretType}
+            onChange={setSecretType}
           />
-          <DatePicker label={"Key Auto Kill Date"} />
         </div>
+
         <TextInput
-          multiline={true}
+          multiline
           label="Description"
           placeholder="Description"
-          // error={emailError}
+          value={description}
+          onChange={setDescription}
         />
-        <TextInput
-          required={true}
+
+        <PasswordInput
           label="Secret"
+          required
           placeholder="e.g. sk-xxxxxxxxxxxxxxxx"
-          // error={emailError}
+          onChange={setSecret}
+          value={secret}
         />
+
         <Button
-          onClick={() => {
-            showAlert("LOL");
-          }}
+          onClick={handleCreateSecret}
           size="xl"
           variant="solid"
+          disabled={loading}
         >
-          Create Secret
+          {loading ? "Creating..." : "Create Secret"}
         </Button>
       </div>
     </motion.div>
