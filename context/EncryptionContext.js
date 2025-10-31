@@ -34,14 +34,12 @@ export function EncryptionProvider({ children }) {
             existingKey,
             sodium.base64_variants.ORIGINAL
           );
-          console.log("🧩 Restored existing session key");
         } else {
           key = sodium.randombytes_buf(32);
           sessionStorage.setItem(
             "__session_key",
             sodium.to_base64(key, sodium.base64_variants.ORIGINAL)
           );
-          console.log("🧩 New session key generated");
         }
 
         if (mounted) {
@@ -68,7 +66,6 @@ export function EncryptionProvider({ children }) {
     (async () => {
       const backup = sessionStorage.getItem("__enc_backup");
       if (!backup) {
-        console.log("ℹ️ No encryption backup found in session");
         return;
       }
 
@@ -98,7 +95,6 @@ export function EncryptionProvider({ children }) {
           setPublicKey(pubKey);
           setPrivateKey(privKey);
           setIsUnlocked(true);
-          console.log("🔐 Session keys restored from sessionStorage");
         }
       } catch (err) {
         console.error("❌ Failed to restore session keys:", err);

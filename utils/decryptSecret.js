@@ -1,13 +1,13 @@
 import * as sodium from "libsodium-wrappers-sumo";
 
 /**
- * Decrypt a secret message encrypted with recipient's public key.
+ * Decrypt an encrypted message (DEK) using recipient's private key.
  *
  * @param {Uint8Array} recipientPrivateKey - Recipient's private key.
  * @param {string} ciphertext - Base64 encoded ciphertext.
  * @param {string} nonce - Base64 encoded nonce used for encryption.
  * @param {string} senderPublicKey - Base64 encoded ephemeral sender public key.
- * @returns {Promise<string>} - Decrypted plaintext message.
+ * @returns {Promise<Uint8Array>} - Decrypted bytes (raw data).
  */
 export async function decryptSecret(
   recipientPrivateKey,
@@ -16,6 +16,11 @@ export async function decryptSecret(
   senderPublicKey
 ) {
   await sodium.ready;
+
+  const recipientPrivateKeyBytes =
+    recipientPrivateKey instanceof Uint8Array
+      ? recipientPrivateKey
+      : new Uint8Array(recipientPrivateKey);
 
   const ciphertextBytes = sodium.from_base64(
     ciphertext,
@@ -31,8 +36,8 @@ export async function decryptSecret(
     ciphertextBytes,
     nonceBytes,
     senderPubKeyBytes,
-    recipientPrivateKey
+    recipientPrivateKeyBytes
   );
 
-  return sodium.to_string(decrypted);
+  return decrypted; // <-- raw bytes (Uint8Array)
 }

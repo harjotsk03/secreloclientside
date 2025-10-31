@@ -61,7 +61,6 @@ import { Button } from "../../../components/buttons/Button";
           setRepoDetails(res.data.repo);
           setRepoFolders(res.data.folders);
           setRepoMembers(res.data.members);
-          console.log(res.data);
         } catch (err) {
           console.error("Error fetching repos:", err);
         }

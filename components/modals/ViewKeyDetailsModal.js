@@ -2,12 +2,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useContext, useEffect, useState } from "react";
 import { AlertContext } from "../../context/alertContext";
 import { Button } from "../buttons/Button";
-import { KeySquare, FileText, Edit2, X, Copy } from "lucide-react";
+import { KeySquare, FileText, Edit2, X, Copy, Eye } from "lucide-react";
 import { TextInput } from "../inputs/TextInput";
 import { Select } from "../inputs/Select";
 import { DatePicker } from "../inputs/DatePicker";
 import { PasswordInput } from "../inputs/PasswordInput";
 import { useAuth } from "../../context/AuthContext";
+import { useEncryption } from "../../context/EncryptionContext";
+import { decryptSecret } from "../../utils/decryptSecret";
+import * as sodium from "libsodium-wrappers-sumo";
 
 export default function ViewKeyDetailsModal({
   setSecrets,
@@ -21,6 +24,54 @@ export default function ViewKeyDetailsModal({
   const [isDirty, setIsDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { authDelete } = useAuth();
+  const { privateKey } = useEncryption();
+  const [revealSecret, setRevealSecret] = useState(false);
+  const [decryptedSecret, setDecryptedSecret] = useState("");
+
+  const handleRevealSecret = async () => {
+    if (revealSecret) {
+      setRevealSecret(false);
+      setDecryptedSecret("");
+      return;
+    }
+
+    if (!privateKey) return showAlert("Private key not loaded", "error");
+
+    try {
+      await sodium.ready;
+
+      const dek = await decryptSecret(
+        privateKey,
+        keyData.encrypted_secret_key,
+        keyData.user_nonce,
+        keyData.sender_public_key
+      );
+
+      const secretNonce = sodium.from_base64(
+        keyData.secret_nonce,
+        sodium.base64_variants.ORIGINAL
+      );
+      const ciphertextSecret = sodium.from_base64(
+        keyData.encrypted_secret,
+        sodium.base64_variants.ORIGINAL
+      );
+
+      const decryptedBytes = sodium.crypto_secretbox_open_easy(
+        ciphertextSecret,
+        secretNonce,
+        dek
+      );
+
+      const finalSecret = sodium.to_string(decryptedBytes);
+      setDecryptedSecret(finalSecret);
+      setRevealSecret(true);
+
+      dek.fill(0);
+    } catch (err) {
+      console.error(err);
+      showAlert("Failed to decrypt secret", "error");
+    }
+  };
 
   useEffect(() => {
     const changed = JSON.stringify(formData) !== JSON.stringify(keyData);
@@ -63,19 +114,54 @@ export default function ViewKeyDetailsModal({
   };
 
   const handleSave = () => {
-    showAlert("Changes saved successfully!", "success");
     setIsEditMode(false);
-    // TODO: handle backend update call here
   };
 
-  const handleCopySecret = async () => {
-    try {
-      await navigator.clipboard.writeText(formData.encrypted_secret);
-      showAlert("Secret copied to clipboard!", "success");
-    } catch (err) {
-      showAlert("Failed to copy secret", "error");
+  async function handleCopySecret() {
+    if (!privateKey) {
+      showAlert("Private key not loaded", "error");
+      return;
     }
-  };
+
+    try {
+      await sodium.ready;
+
+      // 1️⃣ Decrypt DEK for single-user secret
+      const dek = await decryptSecret(
+        privateKey,
+        keyData.encrypted_secret_key,
+        keyData.user_nonce,
+        keyData.sender_public_key
+      );
+
+      // 2️⃣ Decrypt main secret
+      const secretNonce = sodium.from_base64(
+        keyData.secret_nonce,
+        sodium.base64_variants.ORIGINAL
+      );
+      const ciphertextSecret = sodium.from_base64(
+        keyData.encrypted_secret,
+        sodium.base64_variants.ORIGINAL
+      );
+
+      const decryptedBytes = sodium.crypto_secretbox_open_easy(
+        ciphertextSecret,
+        secretNonce,
+        dek
+      );
+      const finalSecret = sodium.to_string(decryptedBytes);
+
+      // 3️⃣ Copy to clipboard
+      await navigator.clipboard.writeText(finalSecret);
+      showAlert("Secret copied to clipboard", "success");
+
+      // 4️⃣ Wipe sensitive data
+      dek.fill(0);
+    } catch (err) {
+      console.error("Decryption or copy failed:", err);
+      showAlert("Failed to copy secret to clipboard", "error");
+    }
+  }
 
   const handleDelete = async () => {
     try {
@@ -200,18 +286,38 @@ export default function ViewKeyDetailsModal({
         />
 
         <div className="flex flex-row gap-2 items-end justify-center">
-          <PasswordInput
-            label="Secret"
-            required
-            placeholder="e.g. sk-xxxxxxxxxxxxxxxx"
-            disabled={!isEditMode}
-            onChange={(e) =>
-              setFormData({ ...formData, encrypted_secret: e.target.value })
-            }
-            value={formData.encrypted_secret}
-          />
+          <div className="w-full space-y-1.5">
+            <label
+              className={`block text-xs lg:text-sm dm-sans-regular ${
+                !isEditMode
+                  ? "text-black/50 dark:text-white/50"
+                  : "text-black dark:text-white"
+              }`}
+            >
+              Secret
+            </label>
+            <input
+              type={revealSecret ? "text" : "password"}
+              className={`
+            w-full px-5 py-2 h-10 text-sm rounded-lg dm-sans-regular text-black bg-white dark:bg-darkBG3 dark:text-white transition-colors border border-stone-200 dark:border-stone-800 focus:border-black focus:dark:border-stone-500 focus:ring-transparent focus:outline-none focus:ring-0 pl-3
+            ${!isEditMode ? "opacity-40 cursor-not-allowed" : ""}
+          `}
+              placeholder=""
+              value={revealSecret ? decryptedSecret : keyData.encrypted_secret}
+              onChange={(e) => onChange(e.target.value)}
+              disabled={!isEditMode}
+            />
+          </div>
+
           {!isEditMode && (
-            <div className="">
+            <div className="flex flex-row gap-2">
+              <Button
+                variant="secondary"
+                size="xl"
+                onClick={handleRevealSecret}
+              >
+                {revealSecret ? "Hide" : "Reveal"}
+              </Button>
               <Button
                 variant="primary"
                 size="xl"
@@ -221,12 +327,15 @@ export default function ViewKeyDetailsModal({
             </div>
           )}
         </div>
-        <Button
-          variant="destructive"
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          Delete
-        </Button>
+        {(currentMember?.member_permissions === "owner" ||
+          currentMember?.member_permissions === "admin") && (
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Delete
+          </Button>
+        )}
       </div>
       <AnimatePresence>
         {showDeleteConfirm && (
