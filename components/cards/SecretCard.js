@@ -12,6 +12,7 @@ export default function SecretCard({
   secret,
   setActiveKey,
   setShowKeyDetailsModal,
+  currentMember,
 }) {
   const { showAlert } = useContext(AlertContext);
   const { privateKey } = useEncryption();
@@ -64,7 +65,7 @@ export default function SecretCard({
   return (
     <div
       key={secret.id}
-      className="flex text-left px-6 py-4 bg-stone-100/80 group justify-between rounded-xl transition-all duration-500"
+      className={`flex text-left px-6 py-4 bg-stone-100/80 group justify-between rounded-xl transition-all duration-500`}
     >
       <div>
         <p className="text-base dm-sans-semibold text-black dark:text-white">
@@ -86,18 +87,21 @@ export default function SecretCard({
         </div>
       </div>
 
-      <div className="flex flex-row justify-between gap-2 items-start">
-        <Button size="sm" variant="ghost" icon={Copy} onClick={handleCopy} />
-        <Button
-          onClick={() => {
-            setActiveKey(secret);
-            setShowKeyDetailsModal(true);
-          }}
-          size="sm"
-        >
-          View
-        </Button>
-      </div>
+      {(currentMember?.member_permissions === "owner" ||
+        currentMember?.member_permissions === "admin") && (
+        <div className="flex flex-row justify-between gap-2 items-start">
+          <Button size="sm" variant="ghost" icon={Copy} onClick={handleCopy} />
+          <Button
+            onClick={() => {
+              setActiveKey(secret);
+              setShowKeyDetailsModal(true);
+            }}
+            size="sm"
+          >
+            View
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

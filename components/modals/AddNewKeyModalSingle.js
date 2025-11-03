@@ -12,6 +12,7 @@ import { encryptSecret } from "../../utils/encryptSecret";
 import { useAuth } from "../../context/AuthContext";
 
 export default function AddNewKeyModalSingle({
+  fetchSecrets,
   setSecrets,
   setShowCreateKeyModal,
   setShowCreateKeyModalSingle,
@@ -104,15 +105,8 @@ export default function AddNewKeyModalSingle({
         body
       );
 
-      console.log(data);
-      if (data.secret) {
-        const newSecret = {
-          ...data.secret,
-          updated_by_name: user?.profile?.full_name,
-        };
-        setSecrets((prev) => [newSecret, ...prev]);
-      }
       if (data.message == "Secret created successfully.") {
+        fetchSecrets();
         showAlert("Secret successfully created!", "success");
         setShowCreateKeyModalSingle(false);
         setShowCreateKeyModal(false);

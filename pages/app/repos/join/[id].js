@@ -12,7 +12,7 @@ export default function Join() {
   const router = useRouter();
   const pathname = usePathname();
     const { showAlert } = useContext(AlertContext);
-  const { id, invitedBy } = router.query;
+  const { id } = router.query;
   const [memberRole, setMemberRole] = useState("");
   const [repoDetails, setRepoDetails] = useState("");
   const { user, authPost, authFetch } = useAuth();

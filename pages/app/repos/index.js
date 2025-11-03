@@ -33,7 +33,6 @@ export default function Repos() {
         const res = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/fetchRepos`
         );
-        console.log(res.data);
         setRepos(res.data || []);
       } catch (err) {
         console.error("Error fetching repos:", err);
@@ -41,7 +40,7 @@ export default function Repos() {
     };
 
     fetchRepos();
-  }, [loading, user, authFetch]);
+  }, [loading, user]);
 
   const filteredRepos = repos.filter((repo) =>
     repo?.name.toLowerCase().includes(searchQuery.toLowerCase())

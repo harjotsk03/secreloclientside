@@ -62,7 +62,12 @@ export default function InviteUserModal() {
       );
 
       console.log("Invite response:", data);
+      sessionStorage.setItem(
+        "recentCreatedInvite",
+        data.repo_invite.repoInviteID.id
+      );
       showAlert("Repo invite created successfully!", "success");
+      handleFetchRepoInviteLinks();
     } catch (err) {
       console.error("Error creating repo invite:", err);
       showAlert(err.message || "Failed to create repo invite", "error");
@@ -90,12 +95,11 @@ export default function InviteUserModal() {
     }
   };
 
-
   // -------------------------------
   // Copy Invite Link
   // -------------------------------
-  const handleCopyLink = (inviteId) => {
-    const inviteLink = `${window.location.origin}/app/repos/join/${inviteId}`;
+  const handleCopyLink = (invite) => {
+    const inviteLink = `${window.location.origin}/app/repos/join/${invite?.id}`;
     navigator.clipboard.writeText(inviteLink);
     showAlert("Invite link copied!", "success");
   };
@@ -153,88 +157,95 @@ export default function InviteUserModal() {
           VIEW PREVIOUS INVITES
       -------------------------------- */}
       {showPreviousInvites ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col max-h-96 overflow-y-scroll gap-4">
           {previousInviteLinks.length === 0 ? (
             <p className="text-sm text-black/60 dark:text-white/40">
               No invites found.
             </p>
           ) : (
             previousInviteLinks.map((invite) => (
-              <div
-                key={invite.id}
-                className="border border-gray-200 dark:border-white/10 rounded-xl px-5 py-3 bg-white dark:bg-white/5"
-              >
-                {/* Header with status and action */}
-                <div className="flex items-center justify-between mb-2">
-                  <span
-                    className={`inline-flex items-center capitalize px-3 py-1 rounded-full text-xs dm-sans-medium ${
-                      invite.status === "active"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
-                    }`}
-                  >
+              <div key={invite.id}>
+                <div
+                  key={invite.id}
+                  className="border border-gray-200 dark:border-white/10 rounded-xl px-5 py-3 bg-white dark:bg-white/5"
+                >
+                  {/* Header with status and action */}
+                  <div className="flex items-center justify-between mb-2">
                     <span
-                      className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                      className={`inline-flex items-center capitalize px-3 py-1 rounded-full text-xs dm-sans-medium ${
                         invite.status === "active"
-                          ? "bg-green-500"
-                          : "bg-gray-400"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
                       }`}
-                    />
-                    {invite.status}
-                  </span>
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                          invite.status === "active"
+                            ? "bg-green-500"
+                            : "bg-gray-400"
+                        }`}
+                      />
+                      {invite.status}
+                    </span>
 
-                  {invite.status === "active" && (
-                    <div className="flex flex-row gap-3">
-                      <Button
-                        size="sm"
-                        variant="solid"
-                        onClick={() => handleCopyLink(invite.id)}
-                        icon={Copy}
-                      >
-                        Copy Link
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        // onClick={() => handleCopyLink(invite.id)}
-                        icon={Trash}
-                      >
-                        Kill Link
-                      </Button>
+                    {invite.status === "active" && (
+                      <div className="flex flex-row gap-3">
+                        <Button
+                          size="sm"
+                          variant="solid"
+                          onClick={() => handleCopyLink(invite)}
+                          icon={Copy}
+                        >
+                          Copy Link
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          // onClick={() => handleCopyLink(invite.id)}
+                          icon={Trash}
+                        >
+                          Kill Link
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info grid */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-gray-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
+                        Role
+                      </span>
+                      <span className="text-gray-900 dark:text-white/90 dm-sans-medium">
+                        {invite.member_role || "Allowing user to decide"}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                {/* Info grid */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
-                      Role
-                    </span>
-                    <span className="text-gray-900 dark:text-white/90 dm-sans-medium">
-                      {invite.member_role || "Allowing user to decide"}
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-3  text-sm">
+                      <span className="text-gray-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
+                        Permission
+                      </span>
+                      <span className="text-gray-900 dark:text-white/90 capitalize dm-sans-medium">
+                        {invite.member_permissions}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center gap-3  text-sm">
-                    <span className="text-gray-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
-                      Permission
-                    </span>
-                    <span className="text-gray-900 dark:text-white/90 capitalize dm-sans-medium">
-                      {invite.member_permissions}
-                    </span>
-                  </div>
-
-                  <div className="pt-3 mt-2 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row gap-2 text-xs text-gray-500 dark:text-white/40">
-                    <span>
-                      Created {new Date(invite.created_at).toLocaleString()}
-                    </span>
-                    <span className="hidden sm:inline">•</span>
-                    <span>
-                      Expires {new Date(invite.expires_at).toLocaleString()}
-                    </span>
+                    <div className="pt-3 mt-2 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row gap-2 text-xs text-gray-500 dark:text-white/40">
+                      <span>
+                        Created {new Date(invite.created_at).toLocaleString()}
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span>
+                        Expires {new Date(invite.expires_at).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                {invite.id == sessionStorage.getItem("recentCreatedInvite") && (
+                  <div className="bg-blue-100 text-blue-700 w-max px-3 py-1.5 text-xs ml-auto mr-4 rounded-b-md">
+                    Recently Created
+                  </div>
+                )}
               </div>
             ))
           )}

@@ -5,7 +5,7 @@ export const BackButton = ({ text = "Back" }) => {
   const router = useRouter();
   return (
     <button
-      onClick={() => router.back("/app/repos")}
+      onClick={() => router.push("/app/repos")}
       className="text black dark:text-white opacity-30 group hover:opacity-90 transition-all duration-500 ease-in-out dm-sans-regular text-xs flex flex-row items-center gap-1"
     >
       <ArrowLeft

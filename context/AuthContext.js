@@ -175,32 +175,81 @@ export const AuthProvider = ({ children }) => {
     let token = user?.accessToken;
     if (!token) throw new Error("No access token available");
 
-    let res = await fetch(`${url}`, {
-      method: "GET",
+    const fetchOptions = {
+      method: options.method || "GET",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        ...options.headers,
       },
-    });
+      signal: options.signal,
+      ...options,
+    };
 
-    let data = await res.json();
+    let res = await fetch(url, fetchOptions);
+    let data;
 
-    // If 401, try to refresh token
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+
+    // Handle expired token -> try refresh
     if (res.status === 401 && user?.refreshToken) {
-      token = await refreshAccessToken(user.refreshToken);
-      if (token) {
-        options.headers.Authorization = `Bearer ${token}`;
-        res = await fetch(url, options);
-        data = await res.json(); // await JSON again
+      try {
+        token = await refreshAccessToken(user.refreshToken);
+        if (token) {
+          fetchOptions.headers.Authorization = `Bearer ${token}`;
+          res = await fetch(url, fetchOptions);
+
+          try {
+            data = await res.json();
+          } catch {
+            data = {};
+          }
+        }
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        showAlert("Session expired. Please log in again.", "error");
+        logout();
+        throw refreshError;
       }
     }
 
+    // ✅ Handle error responses
     if (!res.ok) {
-      // You can throw here like login
-      throw new Error(data.message || "Request failed");
+      // ✅ Use backend error message if available
+      const message =
+        data.message || data.error || getDefaultErrorMessage(res.status);
+
+      showAlert(message, "error"); // ✅ Show backend error message
+
+      const error = new Error(message);
+      error.status = res.status;
+      error.data = data;
+      throw error;
     }
 
     return data;
+  }
+
+  // ✅ Helper function for default error messages
+  function getDefaultErrorMessage(status) {
+    switch (status) {
+      case 400:
+        return "Bad request — please check your input.";
+      case 401:
+        return "Session expired or unauthorized. Please log in again.";
+      case 403:
+        return "You do not have permission to access this resource.";
+      case 404:
+        return "The requested resource was not found.";
+      case 500:
+        return "Server error. Please try again later.";
+      default:
+        return "An unexpected error occurred.";
+    }
   }
 
   async function authPost(url, body = {}, options = {}) {
