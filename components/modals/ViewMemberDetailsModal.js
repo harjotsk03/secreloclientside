@@ -2,13 +2,19 @@ import { motion } from "framer-motion";
 import { useContext, useEffect, useState } from "react";
 import { AlertContext } from "../../context/alertContext";
 import { Button } from "../buttons/Button";
-import { Mail, User, Calendar, KeySquare } from "lucide-react";
+import { Mail, User, KeySquare } from "lucide-react";
 import { TextInput } from "../inputs/TextInput";
 import { Select } from "../inputs/Select";
 import { DatePicker } from "../inputs/DatePicker";
+import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/router";
 
 export default function ViewMemberDetailsModal({ memberData }) {
   const { showAlert } = useContext(AlertContext);
+  const { authPut } = useAuth();
+  const router = useRouter();
+  const { id } = router.query;
+
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -17,7 +23,9 @@ export default function ViewMemberDetailsModal({ memberData }) {
     created_at: "",
     joined_at: "",
   });
+
   const [isDirty, setIsDirty] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (memberData) {
@@ -36,13 +44,12 @@ export default function ViewMemberDetailsModal({ memberData }) {
     if (!memberData) return;
 
     const changed =
-      formData.full_name !== memberData.full_name ||
-      formData.email !== memberData.email ||
       formData.member_role !== memberData.member_role ||
       formData.member_permissions !== memberData.member_permissions;
 
     setIsDirty(changed);
   }, [formData, memberData]);
+
   function formatDateTime(isoString) {
     if (!isoString) return "Unknown";
     const date = new Date(isoString);
@@ -56,15 +63,52 @@ export default function ViewMemberDetailsModal({ memberData }) {
     });
   }
 
-  function handleSave() {
-    showAlert(`Member "${formData.name}" updated successfully.`);
-    console.log("Updated member:", formData);
+  const handleUpdateMember = async () => {
+    console.log(memberData);
+    console.log(formData);
+    const body = {
+      permission: formData.member_permissions,
+      role: formData.member_role,
+    };
+
+    console.log(body);
+
+    const data = await authPut(
+      `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/updateUserPermissions/${memberData.user_id}/${id}`,
+      body
+    );
+
+    console.log(data);
+
+    if (data.success == true) {
+      showAlert(
+        `Member "${formData.full_name}" updated successfully.`,
+        "success"
+      );
+      setIsEditing(false);
+      setIsDirty(false);
+    } else {
+      showAlert(`${data.error}`, "error");
+    }
+  };
+
+  function handleCancel() {
+    // Revert to original data
+    setFormData({
+      full_name: memberData.full_name || "",
+      email: memberData.email || "",
+      member_role: memberData.member_role || "",
+      member_permissions: memberData.member_permissions || "",
+      created_at: memberData.created_at || "",
+      joined_at: memberData.joined_at || "",
+    });
+    setIsEditing(false);
+    setIsDirty(false);
   }
 
   const permissionOptions = [
     { label: "Owner", value: "owner" },
     { label: "Admin", value: "admin" },
-    { label: "Write", value: "write" },
     { label: "Read", value: "read" },
   ];
 
@@ -83,24 +127,45 @@ export default function ViewMemberDetailsModal({ memberData }) {
             Viewing Member — {memberData.full_name}
           </p>
           <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/30 mt-1">
-            <span className="text-black">Joined:</span>{" "}
+            <span className="text-black dark:text-white">Joined:</span>{" "}
             {formatDateTime(memberData.joined_at)}
           </p>
         </div>
 
-        <motion.div
-          animate={{ opacity: isDirty ? 1 : 0.6, scale: isDirty ? 1 : 0.97 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Button
-            variant="solid"
-            size="sm"
-            disabled={!isDirty}
-            onClick={handleSave}
-          >
-            Save
-          </Button>
-        </motion.div>
+        {/* Right-side Buttons */}
+        <div className="flex gap-2 items-center">
+          {isEditing ? (
+            <>
+              <motion.div
+                animate={{
+                  opacity: isDirty ? 1 : 0.6,
+                  scale: isDirty ? 1 : 0.97,
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                <Button
+                  variant="solid"
+                  size="sm"
+                  disabled={!isDirty}
+                  onClick={handleUpdateMember}
+                >
+                  Save
+                </Button>
+              </motion.div>
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Form Section */}
@@ -109,16 +174,16 @@ export default function ViewMemberDetailsModal({ memberData }) {
           label="Full Name"
           placeholder="Full Name"
           value={formData.full_name}
+          disabled={true}
           icon={User}
-          onChange={(val) => setFormData({ ...formData, full_name: val })}
         />
 
         <TextInput
-          label="Email Address"
-          placeholder="Email Address"
+          label="Email"
+          placeholder="Email"
           value={formData.email}
+          disabled={true}
           icon={Mail}
-          onChange={(val) => setFormData({ ...formData, email: val })}
         />
 
         <TextInput
@@ -126,16 +191,23 @@ export default function ViewMemberDetailsModal({ memberData }) {
           placeholder="e.g. Frontend Developer"
           value={formData.member_role}
           icon={KeySquare}
+          disabled={!isEditing}
           onChange={(val) => setFormData({ ...formData, member_role: val })}
         />
 
         <Select
-          disabled={memberData.member_permissions == "Owner"}
           label="Permission Level"
-          required={true}
-          placeholder="Select permission"
-          options={permissionOptions}
+          options={[
+            {
+              label: "Owner",
+              value: "owner",
+              disabled: memberData?.member_permissions !== "owner",
+            },
+            { label: "Admin", value: "admin" },
+            { label: "Read", value: "read" },
+          ]}
           value={formData.member_permissions}
+          disabled={!isEditing}
           onChange={(val) =>
             setFormData({ ...formData, member_permissions: val })
           }
@@ -145,7 +217,7 @@ export default function ViewMemberDetailsModal({ memberData }) {
           disabled={true}
           label="Joined At"
           date={formData.joined_at}
-          onChange={(date) => setFormData({ ...formData, joinedAt: date })}
+          onChange={(date) => setFormData({ ...formData, joined_at: date })}
         />
       </div>
     </motion.div>

@@ -326,6 +326,59 @@ export const AuthProvider = ({ children }) => {
     return data;
   }
 
+  async function authPut(url, body = {}, options = {}) {
+    // Ensure access token exists
+    let token = user?.accessToken;
+    if (!token) throw new Error("No access token available");
+
+    // Build request options
+    let fetchOptions = {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+      body: JSON.stringify(body),
+      ...options,
+    };
+
+    // Perform request
+    let res = await fetch(url, fetchOptions);
+    let data;
+
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+
+    // If token expired (401), refresh and retry
+    if (res.status === 401 && user?.refreshToken) {
+      token = await refreshAccessToken(user.refreshToken);
+      if (token) {
+        fetchOptions.headers.Authorization = `Bearer ${token}`;
+        res = await fetch(url, fetchOptions);
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+      }
+    }
+
+    // Handle non-OK responses
+    if (!res.ok) {
+      const message = data.message || data.error || "PUT request failed";
+      showAlert(message, "error");
+      const error = new Error(message);
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+
+    return data;
+  }
 
   return (
     <AuthContext.Provider
@@ -337,6 +390,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         authFetch,
         authPost,
+        authPut,
         authDelete,
         refreshAccessToken,
       }}
