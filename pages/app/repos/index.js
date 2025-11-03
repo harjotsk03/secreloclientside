@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CreateNewRepoModal from "../../../components/modals/CreateNewRepoModal.js";
 import { useAuth } from "../../../context/AuthContext.js";
+import { formatDateTime } from "../../../utils/formatDateTime.js";
 
 const formatType = (type) => {
   if (!type) return "";
@@ -114,15 +115,15 @@ export default function Repos() {
               <div className="flex px-5 py-3 items-center w-full flex-wrap gap-3 text-xs text-stone-500 dark:text-stone-400 mt-auto border-t border-stone-200 dark:border-stone-700">
                 <div className="flex dm-sans-light items-center gap-1">
                   <UsersRound size={14} />
-                  <span>{repo.members} members</span>
+                  <span>{repo.member_count} members</span>
                 </div>
                 <div className="flex dm-sans-light items-center gap-1">
                   <KeySquare size={14} />
-                  <span>{repo.secrets} secrets</span>
+                  <span>{repo.secret_count} secrets</span>
                 </div>
                 <div className="flex dm-sans-light items-center gap-1">
                   <Calendar size={14} />
-                  <span>{repo.createdAt}</span>
+                  <span>{formatDateTime(repo.created_at)}</span>
                 </div>
               </div>
             </button>
