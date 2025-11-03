@@ -71,8 +71,15 @@ export const Select = ({
   return (
     <div className="space-y-1.5 w-full">
       {label && (
-        <label className="block text-xs lg:text-sm dm-sans-regular text-black dark:text-white">
-          {label} {required && <span className="text-red-500 ml-0.5">*</span>}
+        <label
+          className={`block text-xs lg:text-sm dm-sans-regular mb-1.5 ${
+            disabled
+              ? "text-black/60 dark:text-white/50"
+              : "text-black dark:text-white"
+          }`}
+        >
+          {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <div className="relative">
@@ -80,7 +87,9 @@ export const Select = ({
           type="button"
           disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
-          className={`${disabled ? "opacity-50 hover:cursor-not-allowed" : "opacity-100"} w-full px-5 pl-3 py-2 h-9 text-sm dm-sans-regular rounded-lg border bg-white dark:bg-darkBG3 text-black dark:text-white border-stone-300 dark:border-stone-700 flex items-center justify-between transition`}
+          className={`${
+            disabled ? "opacity-50 hover:cursor-not-allowed" : "opacity-100"
+          } w-full px-5 pl-3 py-2 h-9 text-sm dm-sans-regular rounded-lg border bg-white dark:bg-darkBG3 text-black dark:text-white border-stone-300 dark:border-stone-700 flex items-center justify-between transition`}
         >
           <span
             className={
@@ -108,10 +117,10 @@ export const Select = ({
               return (
                 <div
                   key={option.value}
-                  className={`flex items-center justify-between gap-2 px-3 transition-all ease-in-out duration-500 py-2 text-sm ${
+                  className={`flex items-center justify-between gap-2 px-3 transition-all ease-in-out duration-500 text-sm ${
                     isSelected
                       ? "bg-blue-100 text-blue-600 dark:bg-blue-700/20 dark:text-blue-400"
-                      : "hover:bg-stone-200 dark:hover:bg-stone-200 dark:hover:text-black"
+                      : "hover:bg-stone-200 dark:hover:bg-stone-800 dark:hover:text-black"
                   }`}
                 >
                   {editing ? (
@@ -123,7 +132,7 @@ export const Select = ({
                   ) : (
                     <div
                       onClick={() => handleSelect(option.value)}
-                      className="w-full text-sm cursor-pointer dark:text-white"
+                      className="w-full h-10 flex items-center text-sm cursor-pointer dark:text-white"
                     >
                       {option.label}
                     </div>

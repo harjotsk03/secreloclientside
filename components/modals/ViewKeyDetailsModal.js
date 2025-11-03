@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useContext, useEffect, useState } from "react";
 import { AlertContext } from "../../context/alertContext";
 import { Button } from "../buttons/Button";
-import { KeySquare, FileText, Edit2, X, Copy, Eye } from "lucide-react";
+import { KeySquare, FileText, Edit2, X, Copy, Eye, Check } from "lucide-react";
 import { TextInput } from "../inputs/TextInput";
 import { Select } from "../inputs/Select";
 import { DatePicker } from "../inputs/DatePicker";
@@ -191,17 +191,17 @@ export default function ViewKeyDetailsModal({
           <p className="dm-sans-regular text-lg lg:text-xl text-black dark:text-white">
             {isEditMode ? "Editing" : "Viewing"} Secret - {keyData.name}
           </p>
-          <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/30 mt-1">
-            <span className="text-black">Current Version:</span>{" "}
+          <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/50 mt-1">
+            <span className="text-black dark:text-white">Current Version:</span>{" "}
             {keyData.version}
           </p>
           <div className="flex flex-col lg:flex-row gap-4 items-center mt-0.5 mb-3">
-            <p className="dm-sans-light text-xs lg:text-xs text-black/50 dark:text-white/30">
-              <span className="text-black">Last Modified:</span>{" "}
+            <p className="dm-sans-light text-xs lg:text-xs text-black/50 dark:text-white/50">
+              <span className="text-black dark:text-white">Last Modified:</span>{" "}
               {keyData.updated_by_name} - {formatDateTime(keyData.updated_at)}
             </p>
-            <p className="dm-sans-light text-xs lg:text-xs text-black/50 dark:text-white/30">
-              <span className="text-black">Created:</span>{" "}
+            <p className="dm-sans-light text-xs lg:text-xs text-black/50 dark:text-white/50">
+              <span className="text-black dark:text-white">Created:</span>{" "}
               {keyData.created_by_name} - {formatDateTime(keyData.created_at)}
             </p>
           </div>
@@ -211,12 +211,7 @@ export default function ViewKeyDetailsModal({
           currentMember?.member_permissions === "admin") && (
           <div className="flex gap-2">
             {!isEditMode ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleEdit}
-                icon={Edit2}
-              >
+              <Button variant="secondary" size="sm" onClick={handleEdit}>
                 Edit
               </Button>
             ) : (
@@ -233,6 +228,7 @@ export default function ViewKeyDetailsModal({
                     size="sm"
                     disabled={!isDirty}
                     onClick={handleSave}
+                    icon={Check}
                   >
                     Save
                   </Button>

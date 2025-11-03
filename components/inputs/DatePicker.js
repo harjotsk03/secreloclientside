@@ -10,7 +10,13 @@ export function DatePicker({ label, required=false, date, setDate, disabled }) {
     <div className="relative w-full">
       <div className="flex flex-row justify-between items-end">
         {label && (
-          <label className={`block text-xs lg:text-sm dm-sans-regular mb-1.5`}>
+          <label
+            className={`block text-xs lg:text-sm dm-sans-regular mb-1.5 ${
+              disabled
+                ? "text-black/60 dark:text-white/50"
+                : "text-black dark:text-white"
+            }`}
+          >
             {label}
             {required && <span className="text-red-500 ml-0.5">*</span>}
           </label>

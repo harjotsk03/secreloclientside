@@ -50,16 +50,18 @@ export default function FAQAccordion() {
       <div className="mx-auto grid md:grid-cols-2 gap-12">
         {/* Left Column */}
         <div className="">
-          <div className="relative w-max flex items-center flex-row gap-2 rounded-full px-3 lg:px-4 py-1 lg:py-1.5 border border-transparent overflow-hidden flow-border z-10">
+          <div className="relative w-max flex items-center flex-row gap-2 rounded-full px-3 lg:px-4 py-1 lg:py-1.5 border border-transparent overflow-hidden border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-950 z-10">
             <p className="relative z-10 poppins-regular text-xs text-green-main">
               FAQ
             </p>
           </div>
-          <p className="poppins-medium text-3xl mt-4 lg:w-4/5">
+          <p className="poppins-medium text-black dark:text-white text-3xl mt-4">
             Common Questions, with{" "}
-            <span className="text-green-main">Clear Answers</span>
+            <span className="text-green-main dark:text-green-500">
+              Clear Answers
+            </span>
           </p>
-          <p className="text-neutral-600 text-xs lg:text-sm poppins-regular lg:w-4/5 mt-2 z-10">
+          <p className="text-neutral-600 dark:text-stone-400 text-xs lg:text-sm poppins-regular mt-2 text-left z-10">
             Here are answers to the most common things people ask before getting
             started.
           </p>
@@ -71,21 +73,23 @@ export default function FAQAccordion() {
             <button
               key={index}
               onClick={() => toggleAccordion(index)}
-              className="bg-stone-50 text-left w-full rounded-2xl overflow-hidden transition-all duration-300"
+              className="bg-stone-50 dark:bg-stone-900 text-left w-full rounded-2xl overflow-hidden transition-all duration-300"
             >
               <div className="w-full px-6 py-5 flex items-center justify-between text-left ">
                 <div className="flex items-center gap-4 flex-1">
                   {/* <span className="text-green-main poppins-medium text-lg">
                     {String(index + 1).padStart(2, "0")}.
                   </span> */}
-                  <span className="text-gray-900 text-lg poppins-regular flex-1 pt-0.5">
+                  <span className="text-gray-900 dark:text-white text-lg poppins-regular flex-1 pt-0.5">
                     {faq.question}
                   </span>
                 </div>
                 <div className="ml-4 mt-1">
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      openIndex === index ? "bg-green-main" : "bg-gray-300"
+                      openIndex === index
+                        ? "bg-green-main"
+                        : "bg-gray-300 dark:bg-stone-700"
                     }`}
                   >
                     <svg
@@ -111,7 +115,7 @@ export default function FAQAccordion() {
                   openIndex === index ? "max-h-96" : "max-h-0"
                 }`}
               >
-                <div className="px-6 pb-6 text-neutral-700 poppins-regular text-sm leading-relaxed">
+                <div className="px-6 pb-6 text-neutral-700 dark:text-stone-400 poppins-regular text-sm leading-relaxed">
                   {faq.answer}
                 </div>
               </div>

@@ -65,7 +65,7 @@ export default function SecretCard({
   return (
     <div
       key={secret.id}
-      className={`flex text-left px-6 py-4 bg-stone-100/80 group justify-between rounded-xl transition-all duration-500`}
+      className={`flex text-left px-6 py-4 bg-stone-100/80 dark:bg-stone-800/80 group justify-between rounded-xl transition-all duration-500`}
     >
       <div>
         <p className="text-base dm-sans-semibold text-black dark:text-white">

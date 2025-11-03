@@ -299,7 +299,7 @@ import { Button } from "../../../components/buttons/Button";
                 <p className="dm-sans-regular text-sm text-stone-600 dark:text-stone-300 mt-2">
                   {repoDetails?.description}
                 </p>
-                <p className="dm-sans-light w-max capitalize text-xs px-3 py-1 text-green-700 bg-green-200 rounded-lg dark:text-white mt-2">
+                <p className="dm-sans-light w-max capitalize text-xs px-3 py-1 text-green-700 bg-green-200 dark:bg-green-800 rounded-lg dark:text-white mt-2">
                   {formatType(repoDetails?.type)}
                 </p>
               </div>
@@ -330,12 +330,7 @@ import { Button } from "../../../components/buttons/Button";
                 )}
 
                 {repoDetails?.created_by === user?.profile?.id ? (
-                  <Button
-                    onClick={() => {}}
-                    variant="secondary"
-                    icon={Pen}
-                    size="sm"
-                  >
+                  <Button onClick={() => {}} variant="secondary" size="sm">
                     Edit
                   </Button>
                 ) : (

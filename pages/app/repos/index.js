@@ -101,7 +101,7 @@ export default function Repos() {
                   <h3 className="text-lg dm-sans-medium text-black dark:text-white">
                     {repo.name}
                   </h3>
-                  <p className="dm-sans-light h-max w-max capitalize text-xs px-3 py-1 text-green-700 bg-green-200 rounded-lg dark:text-white">
+                  <p className="dm-sans-light h-max w-max capitalize text-xs px-3 py-1 text-green-700 bg-green-200 dark:bg-green-900 rounded-lg dark:text-white">
                     {formatType(repo?.type)}
                   </p>
                 </div>

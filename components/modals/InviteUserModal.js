@@ -167,22 +167,22 @@ export default function InviteUserModal() {
               <div key={invite.id}>
                 <div
                   key={invite.id}
-                  className="border border-gray-200 dark:border-white/10 rounded-xl px-5 py-3 bg-white dark:bg-white/5"
+                  className="border border-stone-200 dark:border-white/10 rounded-xl px-5 py-3 bg-white dark:bg-white/5"
                 >
                   {/* Header with status and action */}
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-4">
                     <span
                       className={`inline-flex items-center capitalize px-3 py-1 rounded-full text-xs dm-sans-medium ${
                         invite.status === "active"
                           ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
+                          : "bg-stone-100 text-stone-600 dark:bg-stone-700 dark:text-stone-400"
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full mr-2 ${
                           invite.status === "active"
                             ? "bg-green-500"
-                            : "bg-gray-400"
+                            : "bg-stone-400"
                         }`}
                       />
                       {invite.status}
@@ -213,24 +213,24 @@ export default function InviteUserModal() {
                   {/* Info grid */}
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-3 text-sm">
-                      <span className="text-gray-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
+                      <span className="text-stone-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
                         Role
                       </span>
-                      <span className="text-gray-900 dark:text-white/90 dm-sans-medium">
+                      <span className="text-stone-900 dark:text-white/90 dm-sans-medium">
                         {invite.member_role || "Allowing user to decide"}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-3  text-sm">
-                      <span className="text-gray-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
+                      <span className="text-stone-400 dark:text-white/40 min-w-[90px] text-xs dm-sans-medium uppercase tracking-wide">
                         Permission
                       </span>
-                      <span className="text-gray-900 dark:text-white/90 capitalize dm-sans-medium">
+                      <span className="text-stone-900 dark:text-white/90 capitalize dm-sans-medium">
                         {invite.member_permissions}
                       </span>
                     </div>
 
-                    <div className="pt-3 mt-2 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row gap-2 text-xs text-gray-500 dark:text-white/40">
+                    <div className="pt-3 mt-2 border-t border-stone-100 dark:border-white/5 flex flex-col sm:flex-row gap-2 text-xs text-stone-500 dark:text-white/40">
                       <span>
                         Created {new Date(invite.created_at).toLocaleString()}
                       </span>

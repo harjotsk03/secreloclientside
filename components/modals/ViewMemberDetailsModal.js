@@ -126,7 +126,7 @@ export default function ViewMemberDetailsModal({ memberData }) {
           <p className="dm-sans-regular text-lg lg:text-xl text-black dark:text-white">
             Viewing Member — {memberData.full_name}
           </p>
-          <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/30 mt-1">
+          <p className="dm-sans-light text-xs lg:text-sm text-black/50 dark:text-white/50 mt-1">
             <span className="text-black dark:text-white">Joined:</span>{" "}
             {formatDateTime(memberData.joined_at)}
           </p>
