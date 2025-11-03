@@ -87,8 +87,7 @@ export default function SecretCard({
         </div>
       </div>
 
-      {(currentMember?.member_permissions === "owner" ||
-        currentMember?.member_permissions === "admin") && (
+      {currentMember?.status === "active" && (
         <div className="flex flex-row justify-between gap-2 items-start">
           <Button size="sm" variant="ghost" icon={Copy} onClick={handleCopy} />
           <Button
