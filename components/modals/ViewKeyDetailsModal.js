@@ -5,28 +5,35 @@ import { Button } from "../buttons/Button";
 import { KeySquare, FileText, Edit2, X, Copy, Eye, Check } from "lucide-react";
 import { TextInput } from "../inputs/TextInput";
 import { Select } from "../inputs/Select";
-import { DatePicker } from "../inputs/DatePicker";
-import { PasswordInput } from "../inputs/PasswordInput";
 import { useAuth } from "../../context/AuthContext";
 import { useEncryption } from "../../context/EncryptionContext";
 import { decryptSecret } from "../../utils/decryptSecret";
+import { reEncryptSecret } from "../../utils/reEncryptSecret";
 import * as sodium from "libsodium-wrappers-sumo";
 
 export default function ViewKeyDetailsModal({
   setSecrets,
   keyData,
   currentMember,
+  repoUsers,
   setShowKeyDetailsModal,
 }) {
   const { showAlert } = useContext(AlertContext);
-  const [formData, setFormData] = useState(keyData);
+  const [formData, setFormData] = useState({
+    name: keyData.name,
+    description: keyData.description,
+    type: keyData.type,
+  });
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { authDelete } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { authDelete, authPut } = useAuth();
   const { privateKey } = useEncryption();
   const [revealSecret, setRevealSecret] = useState(false);
   const [decryptedSecret, setDecryptedSecret] = useState("");
+  const [editedSecret, setEditedSecret] = useState(""); // NEW: Track edited secret value
+  const [secretChanged, setSecretChanged] = useState(false); // NEW: Track if secret value changed
 
   const handleRevealSecret = async () => {
     if (revealSecret) {
@@ -64,6 +71,7 @@ export default function ViewKeyDetailsModal({
 
       const finalSecret = sodium.to_string(decryptedBytes);
       setDecryptedSecret(finalSecret);
+      setEditedSecret(finalSecret); // Initialize edited secret
       setRevealSecret(true);
 
       dek.fill(0);
@@ -74,9 +82,21 @@ export default function ViewKeyDetailsModal({
   };
 
   useEffect(() => {
-    const changed = JSON.stringify(formData) !== JSON.stringify(keyData);
-    setIsDirty(changed);
-  }, [formData, keyData]);
+    // Check if metadata changed
+    const metadataChanged =
+      formData.name !== keyData.name ||
+      formData.description !== keyData.description ||
+      formData.type !== keyData.type;
+
+    setIsDirty(metadataChanged || secretChanged);
+  }, [formData, keyData, secretChanged]);
+
+  // NEW: Track if secret value changed
+  useEffect(() => {
+    if (isEditMode && revealSecret) {
+      setSecretChanged(editedSecret !== decryptedSecret);
+    }
+  }, [editedSecret, decryptedSecret, isEditMode, revealSecret]);
 
   function formatDateTime(isoString) {
     if (!isoString) return "Unknown";
@@ -104,17 +124,104 @@ export default function ViewKeyDetailsModal({
     { label: "Custom Secret", value: "custom_secret" },
   ];
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     setIsEditMode(true);
+    // Auto-reveal secret when entering edit mode
+    if (!revealSecret) {
+      await handleRevealSecret();
+    }
   };
 
   const handleCancel = () => {
-    setFormData(keyData);
+    setFormData({
+      name: keyData.name,
+      description: keyData.description,
+      type: keyData.type,
+    });
+    setEditedSecret(decryptedSecret); // Reset edited secret
+    setSecretChanged(false);
     setIsEditMode(false);
   };
 
-  const handleSave = () => {
-    setIsEditMode(false);
+  const handleSave = async () => {
+    if (!isDirty) return;
+
+    setLoading(true);
+
+    try {
+      // Check if secret value changed
+      if (secretChanged) {
+        // SECRET VALUE CHANGED - use /value endpoint
+
+        if (!repoUsers || repoUsers.length === 0) {
+          throw new Error("Repository users not loaded");
+        }
+
+        // Re-encrypt secret with new DEK for all users
+        const { encrypted_secret, nonce, encrypted_keys } =
+          await reEncryptSecret(editedSecret, repoUsers);
+
+        const body = {
+          encrypted_secret,
+          nonce,
+          encrypted_keys,
+          name: formData.name,
+          description: formData.description,
+          type: formData.type,
+        };
+
+        const response = await authPut(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/secrets/${keyData.id}/value`,
+          body
+        );
+
+        showAlert("Secret updated successfully!", "success");
+
+        // Update local state
+        setSecrets((prev) =>
+          prev.map((secret) =>
+            secret.id === keyData.id
+              ? { ...secret, ...response.secret }
+              : secret
+          )
+        );
+
+        window.location.reload();
+      } else {
+        // METADATA ONLY CHANGED - use /metadata endpoint
+
+        const body = {
+          name: formData.name,
+          description: formData.description,
+          type: formData.type,
+        };
+
+        const response = await authPut(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/secrets/${keyData.id}/metadata`,
+          body
+        );
+
+        showAlert("Secret metadata updated successfully!", "success");
+
+        // Update local state
+        setSecrets((prev) =>
+          prev.map((secret) =>
+            secret.id === keyData.id
+              ? { ...secret, ...response.secret }
+              : secret
+          )
+        );
+      }
+
+      setIsEditMode(false);
+      setSecretChanged(false);
+      setShowKeyDetailsModal(false); // Close modal after save
+    } catch (err) {
+      console.error("Error updating secret:", err);
+      showAlert(err.message || "Failed to update secret", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   async function handleCopySecret() {
@@ -126,7 +233,6 @@ export default function ViewKeyDetailsModal({
     try {
       await sodium.ready;
 
-      // 1️⃣ Decrypt DEK for single-user secret
       const dek = await decryptSecret(
         privateKey,
         keyData.encrypted_secret_key,
@@ -134,7 +240,6 @@ export default function ViewKeyDetailsModal({
         keyData.sender_public_key
       );
 
-      // 2️⃣ Decrypt main secret
       const secretNonce = sodium.from_base64(
         keyData.secret_nonce,
         sodium.base64_variants.ORIGINAL
@@ -151,11 +256,9 @@ export default function ViewKeyDetailsModal({
       );
       const finalSecret = sodium.to_string(decryptedBytes);
 
-      // 3️⃣ Copy to clipboard
       await navigator.clipboard.writeText(finalSecret);
       showAlert("Secret copied to clipboard", "success");
 
-      // 4️⃣ Wipe sensitive data
       dek.fill(0);
     } catch (err) {
       console.error("Decryption or copy failed:", err);
@@ -175,6 +278,7 @@ export default function ViewKeyDetailsModal({
       setShowKeyDetailsModal(false);
     } catch (err) {
       console.error("Error deleting secret:", err);
+      showAlert("Failed to delete secret", "error");
     }
   };
 
@@ -226,17 +330,19 @@ export default function ViewKeyDetailsModal({
                   <Button
                     variant="solid"
                     size="sm"
-                    disabled={!isDirty}
+                    disabled={!isDirty || loading}
+                    loading={loading}
                     onClick={handleSave}
                     icon={Check}
                   >
-                    Save
+                    {secretChanged ? "Save (New DEKs)" : "Save"}
                   </Button>
                 </motion.div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleCancel}
+                  disabled={loading}
                   icon={X}
                 >
                   Cancel
@@ -255,7 +361,7 @@ export default function ViewKeyDetailsModal({
             value={formData.name}
             icon={KeySquare}
             disabled={!isEditMode}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(val) => setFormData({ ...formData, name: val })}
           />
           <Select
             label="Secret Type"
@@ -276,9 +382,7 @@ export default function ViewKeyDetailsModal({
           value={formData.description}
           icon={FileText}
           disabled={!isEditMode}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
+          onChange={(val) => setFormData({ ...formData, description: val })}
         />
 
         <div className="flex flex-row gap-2 items-end justify-center">
@@ -290,17 +394,31 @@ export default function ViewKeyDetailsModal({
                   : "text-black dark:text-white"
               }`}
             >
-              Secret
+              Secret{" "}
+              {secretChanged && (
+                <span className="text-amber-600">(Modified)</span>
+              )}
             </label>
             <input
               type={revealSecret ? "text" : "password"}
               className={`
             w-full px-5 py-2 h-10 text-sm rounded-lg dm-sans-regular text-black bg-white dark:bg-darkBG3 dark:text-white transition-colors border border-stone-200 dark:border-stone-800 focus:border-black focus:dark:border-stone-500 focus:ring-transparent focus:outline-none focus:ring-0 pl-3
             ${!isEditMode ? "opacity-40 cursor-not-allowed" : ""}
+            ${secretChanged ? "border-amber-600 dark:border-amber-600" : ""}
           `}
               placeholder=""
-              value={revealSecret ? decryptedSecret : keyData.encrypted_secret}
-              onChange={(e) => onChange(e.target.value)}
+              value={
+                revealSecret
+                  ? isEditMode
+                    ? editedSecret
+                    : decryptedSecret
+                  : "••••••••••••••••"
+              }
+              onChange={(e) => {
+                if (isEditMode) {
+                  setEditedSecret(e.target.value);
+                }
+              }}
               disabled={!isEditMode}
             />
           </div>
@@ -323,16 +441,19 @@ export default function ViewKeyDetailsModal({
             </div>
           )}
         </div>
+
         {(currentMember?.member_permissions === "owner" ||
-          currentMember?.member_permissions === "admin") && (
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            Delete
-          </Button>
-        )}
+          currentMember?.member_permissions === "admin") &&
+          !isEditMode && (
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete
+            </Button>
+          )}
       </div>
+
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
@@ -342,13 +463,11 @@ export default function ViewKeyDetailsModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            {/* Background overlay */}
             <div
               className="absolute inset-0 bg-black/50"
               onClick={() => setShowDeleteConfirm(false)}
             />
 
-            {/* Confirmation box */}
             <motion.div
               className="relative z-50 bg-white dark:bg-darkBG rounded-xl p-8 w-11/12 max-w-md shadow-lg"
               initial={{ scale: 0.95 }}
@@ -372,13 +491,7 @@ export default function ViewKeyDetailsModal({
                 >
                   Cancel
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    handleDelete();
-                  }}
-                >
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
                   Confirm
                 </Button>
               </div>

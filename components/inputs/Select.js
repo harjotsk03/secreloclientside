@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
   ChevronDown,
@@ -119,7 +120,7 @@ export const Select = ({
                   key={option.value}
                   className={`flex items-center justify-between gap-2 px-3 transition-all ease-in-out duration-500 text-sm ${
                     isSelected
-                      ? "bg-blue-100 text-blue-600 dark:bg-blue-700/20 dark:text-blue-400"
+                      ? "bg-green-100 text-green-600 dark:bg-green-700/20 dark:text-green-400"
                       : "hover:bg-stone-200 dark:hover:bg-stone-800 dark:hover:text-black"
                   }`}
                 >
@@ -144,7 +145,7 @@ export const Select = ({
                       onClick={() => handleSelect(option.value)}
                     >
                       {isSelected && (
-                        <CheckCircle className="w-4 h-4 text-blue-600" />
+                        <CheckCircle className="w-4 h-4 text-green-600" />
                       )}
                     </button>
                     {editing && (

@@ -157,9 +157,9 @@ export default function InviteUserModal() {
           VIEW PREVIOUS INVITES
       -------------------------------- */}
       {showPreviousInvites ? (
-        <div className="flex flex-col max-h-96 overflow-y-scroll gap-4">
+        <div className="flex flex-col max-h-96 overflow-y-auto gap-4">
           {previousInviteLinks.length === 0 ? (
-            <p className="text-sm text-black/60 dark:text-white/40">
+            <p className="text-sm text-black/60 w-full dark:text-white/40">
               No invites found.
             </p>
           ) : (
@@ -242,7 +242,7 @@ export default function InviteUserModal() {
                   </div>
                 </div>
                 {invite.id == sessionStorage.getItem("recentCreatedInvite") && (
-                  <div className="bg-blue-100 text-blue-700 w-max px-3 py-1.5 text-xs ml-auto mr-4 rounded-b-md">
+                  <div className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 w-max px-3 py-1.5 text-xs ml-auto mr-4 rounded-b-md">
                     Recently Created
                   </div>
                 )}
@@ -267,9 +267,10 @@ export default function InviteUserModal() {
             <TextInput
               label="Member Role/Title"
               required={true}
+              value={memberRole}
               placeholder="E.g. Software Engineer / Lead / Student"
               icon={KeySquare}
-              onChange={(e) => setMemberRole(e.target.value)}
+              onChange={setMemberRole}
             />
           )}
 

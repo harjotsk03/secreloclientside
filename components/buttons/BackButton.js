@@ -6,11 +6,11 @@ export const BackButton = ({ text = "Back" }) => {
   return (
     <button
       onClick={() => router.push("/app/repos")}
-      className="text black dark:text-white opacity-30 group hover:opacity-90 transition-all duration-500 ease-in-out dm-sans-regular text-xs flex flex-row items-center gap-1"
+      className="text-black dark:text-white opacity-30 group hover:opacity-90 transition-all duration-500 ease-in-out dm-sans-regular text-sm flex flex-row items-center gap-1"
     >
       <ArrowLeft
         className="group-hover:-translate-x-1 transition-all duration-500"
-        size={12}
+        size={14}
       />{" "}
       {text}
     </button>

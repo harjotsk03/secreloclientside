@@ -193,7 +193,7 @@ export default function AuthLayout({ children }) {
             : "ml-0 lg:ml-80 pl-0 lg:pl-6"
         }`}
       >
-        <div className="pt-16 lg:pr-6 lg:mt-0 lg:pt-20">{children}</div>
+        <div className="pt-20 lg:pr-6 lg:mt-0 lg:pt-20">{children}</div>
       </main>
     </div>
   );
