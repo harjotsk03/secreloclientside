@@ -27,6 +27,8 @@ import { useEncryption } from "../../../context/EncryptionContext";
 import SecretCard from "../../../components/cards/SecretCard";
 import { addUserToSecret } from "../../../utils/addUserToSecret";
 import { Select } from "../../../components/inputs/Select";
+import DeleteRepoVerificationModal from "../../../components/modals/DeleteRepoVerificationModal";
+import LeaveRepoVerificationModal from "../../../components/modals/LeaveRepoVerificationModal";
 
 const options = [
   { label: "Personal Project", value: "personal" },
@@ -50,8 +52,12 @@ export default function RouteDetailsPage() {
   const [secrets, setSecrets] = useState([]);
   const [showCreateKeyModalSingle, setShowCreateKeyModalSingle] =
     useState(false);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [editingRepo, setEditingRepo] = useState(false);
+  const [leaveVerification, setLeaveVerification] = useState(false);
+  const [deleteVerification, setDeleteVerification] = useState(false);
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
   const [showKeyDetailsModal, setShowKeyDetailsModal] = useState(false);
   const [showMemberDetailsModal, setShowMemberDetailsModal] = useState(false);
@@ -228,8 +234,94 @@ export default function RouteDetailsPage() {
     }
   };
 
+  const handleDeleteRepo = async () => {
+    setDeleteLoading(true);
+    try {
+      const data = await authDelete(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/deleteRepo/${id}`
+      );
+
+      if (data.success) {
+        router.push("/app/repos");
+        showAlert("Repository deleted successfully", "success");
+        setDeleteLoading(false);
+      }
+    } catch (err) {
+      console.error("Error deleting repo:", err);
+      showAlert("Failed to delete repository", "error");
+    }
+  };
+
+  const handleLeaveRepo = async () => {
+    setLeaveLoading(true);
+    try {
+      const data = await authPost(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/leaveRepo/${id}`
+      );
+
+      if (data.success) {
+        router.push("/app/repos");
+        showAlert("Repository left successfully", "success");
+        setLeaveLoading(false);
+      }
+    } catch (err) {
+      console.error("Error leaving repo:", err);
+      showAlert("Failed to leave repository", "error");
+    }
+  };
+
   return (
     <>
+      <AnimatePresence>
+        {deleteVerification && (
+          <motion.div
+            className="fixed inset-0 z-40 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setDeleteVerification(false)}
+            />
+            <DeleteRepoVerificationModal
+              repoName={repoDetails.name}
+              onClose={() => {
+                setDeleteVerification(false);
+              }}
+              onDelete={handleDeleteRepo}
+              deleteLoading={deleteLoading}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {leaveVerification && (
+          <motion.div
+            className="fixed inset-0 z-40 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setLeaveVerification(false)}
+            />
+            <LeaveRepoVerificationModal
+              repoName={repoDetails.name}
+              onClose={() => {
+                setLeaveVerification(false);
+              }}
+              onLeave={handleLeaveRepo}
+              leaveLoading={leaveLoading}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showCreateKeyModal && (
           <motion.div
@@ -408,6 +500,17 @@ export default function RouteDetailsPage() {
           </div>
           <div className="flex flex-row gap-2">
             {(currentMember?.member_permissions === "owner" ||
+              currentMember?.member_permissions === "write" ||
+              currentMember?.member_permissions === "admin") && (
+              <Button
+                onClick={() => setShowCreateKeyModal(true)}
+                icon={PlusCircle}
+                size="sm"
+              >
+                Add Secret
+              </Button>
+            )}
+            {(currentMember?.member_permissions === "owner" ||
               currentMember?.member_permissions === "admin") && (
               <Button
                 onClick={() => {
@@ -420,27 +523,30 @@ export default function RouteDetailsPage() {
                 Invite Member
               </Button>
             )}
-            {(currentMember?.member_permissions === "owner" ||
-              currentMember?.member_permissions === "write" ||
-              currentMember?.member_permissions === "admin") && (
-              <Button
-                onClick={() => setShowCreateKeyModal(true)}
-                icon={PlusCircle}
-                size="sm"
-              >
-                Add Secret
-              </Button>
-            )}
 
             {repoDetails?.created_by === user?.profile?.id ? (
-              !editingRepo && (
-                <Button onClick={handleEditRepo} variant="secondary" size="sm">
-                  Edit
+              <>
+                {!editingRepo && (
+                  <Button
+                    onClick={handleEditRepo}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    Edit
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setDeleteVerification(true)}
+                  variant="destructive"
+                >
+                  Delete
                 </Button>
-              )
+              </>
             ) : (
               <Button
-                onClick={() => {}}
+                onClick={() => {
+                  setLeaveVerification(true);
+                }}
                 variant="solid"
                 icon={FolderOutput}
                 size="sm"

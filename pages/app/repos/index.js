@@ -46,7 +46,10 @@ export default function Repos() {
         const res = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/fetchRepos`
         );
-        setRepos(res.data || []);
+        const sortedRepos = (res.data || []).sort(
+          (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+        );
+        setRepos(sortedRepos);
       } catch (err) {
         console.error("Error fetching repos:", err);
       }
