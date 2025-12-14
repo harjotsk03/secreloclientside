@@ -30,7 +30,7 @@ export default function Hero() {
         </div>
 
         <p className="relative z-10 poppins-regular text-xs text-[#0F8B4E] dark:text-green-700">
-          Trusted by 200+ users
+          Trusted by 15+ users
         </p>
       </div>
 
