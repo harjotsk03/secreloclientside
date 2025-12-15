@@ -171,7 +171,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  async function authFetch(url, options = {}) {
+  async function authFetch(url, options = {}, showTheAlert = true) {
     let token = user?.accessToken;
     if (!token) throw new Error("No access token available");
 
@@ -223,7 +223,9 @@ export const AuthProvider = ({ children }) => {
       const message =
         data.message || data.error || getDefaultErrorMessage(res.status);
 
-      showAlert(message, "error"); // ✅ Show backend error message
+      {
+        showTheAlert && showAlert(message, "error");
+      }
 
       const error = new Error(message);
       error.status = res.status;

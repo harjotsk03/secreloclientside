@@ -10,6 +10,7 @@ import {
   UsersRound,
   Search,
   FolderGit2,
+  Github,
 } from "lucide-react";
 import { Button } from "../../../components/buttons/Button.js";
 import { TextInput } from "../../../components/inputs/TextInput.js";
@@ -89,13 +90,25 @@ export default function Repos() {
           <p className="dm-sans-medium text-2xl text-black dark:text-white mt-2">
             Repos
           </p>
-          <Button
-            onClick={() => setShowCreateRepoModal(true)}
-            icon={PlusCircle}
-            size="sm"
-          >
-            Create New Repo
-          </Button>
+          <div className="flex flex-row gap-3">
+            {/* <Button
+              onClick={() => {
+                handleGithubConnect();
+              }}
+              variant="solid"
+              icon={Github}
+              size="sm"
+            >
+              Import Repo
+            </Button> */}
+            <Button
+              onClick={() => setShowCreateRepoModal(true)}
+              icon={PlusCircle}
+              size="sm"
+            >
+              Create New Repo
+            </Button>
+          </div>
         </div>
 
         <TextInput

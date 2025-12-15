@@ -5,6 +5,7 @@ import { TextInput } from "../inputs/TextInput";
 import { Button } from "../buttons/Button";
 import { AlertContext } from "../../context/alertContext";
 import { useAuth } from "../../context/AuthContext";
+import Connections from "../profile/Connections";
 
 export const ProfilePage = () => {
   const { user, setUser, authPut } = useAuth();
@@ -77,7 +78,7 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div>
+    <div className="pb-10">
       <p className="poppins-medium text-2xl text-black dark:text-white mt-2">
         Profile
       </p>
@@ -132,6 +133,8 @@ export const ProfilePage = () => {
           </Button>
         </div>
       </div>
+
+      <Connections />
     </div>
   );
 };
