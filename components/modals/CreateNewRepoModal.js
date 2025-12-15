@@ -78,8 +78,7 @@ export default function CreateNewRepoModal({
       setDescription("");
       setRepoType("");
       setUserRole("");
-      router.push(`/app/repos/`);
-      window.location.reload();
+      router.push(`/app/repos/${data.repo.id}`);
     } catch (err) {
       console.error(err);
       showAlert(err.message || "Failed to create repo", "error");

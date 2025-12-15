@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useEffect, useState } from "react";
 import { Button } from "../buttons/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -20,30 +20,29 @@ export default function Connections() {
   };
 
   useEffect(() => {
-  let cancelled = false;
+    let cancelled = false;
 
-  const fetchGitHubAccount = async () => {
-    try {
-      const res = await authFetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/github/getGitHubAccount`
-      );
-      if (!cancelled) {
-        setIsConnected(res.connected);
+    const fetchGitHubAccount = async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/github/getGitHubAccount`
+        );
+        if (!cancelled) {
+          setIsConnected(res.connected);
+        }
+      } catch {
+        if (!cancelled) {
+          setIsConnected(false);
+        }
       }
-    } catch {
-      if (!cancelled) {
-        setIsConnected(false);
-      }
-    }
-  };
+    };
 
-  fetchGitHubAccount();
+    fetchGitHubAccount();
 
-  return () => {
-    cancelled = true;
-  };
-}, []);
-
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col bg-white dark:bg-gray-900 rounded-xl mt-4 border border-stone-300 dark:border-stone-700">

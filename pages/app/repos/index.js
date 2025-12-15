@@ -20,12 +20,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import CreateNewRepoModal from "../../../components/modals/CreateNewRepoModal.js";
 import { useAuth } from "../../../context/AuthContext.js";
 import { formatDateTime } from "../../../utils/formatDateTime.js";
+import ImportRepoGithubModal from "../../../components/modals/ImportRepoGithubModal.js";
 
 const formatType = (type) => {
   if (!type) return "";
   return type
     .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // capitalize
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
 
@@ -37,6 +38,8 @@ export default function Repos() {
   const handleRepoClick = (repoId) => {
     window.location.href = `/app/repos/${repoId}`;
   };
+  const [showImportRepoGithubModal, setShowImportRepoGithubModal] =
+    useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -66,6 +69,26 @@ export default function Repos() {
   return (
     <>
       <AnimatePresence>
+        {showImportRepoGithubModal && (
+          <motion.div
+            className="fixed inset-0 z-40 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setShowImportRepoGithubModal(false)}
+            />
+            <ImportRepoGithubModal
+              setShowImportRepoGithubModal={setShowImportRepoGithubModal}
+              setRepos={setRepos}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         {showCreateRepoModal && (
           <motion.div
             className="fixed inset-0 z-40 flex items-center justify-center"
@@ -91,16 +114,16 @@ export default function Repos() {
             Repos
           </p>
           <div className="flex flex-row gap-3">
-            {/* <Button
+            <Button
               onClick={() => {
-                handleGithubConnect();
+                setShowImportRepoGithubModal(true);
               }}
               variant="solid"
               icon={Github}
               size="sm"
             >
               Import Repo
-            </Button> */}
+            </Button>
             <Button
               onClick={() => setShowCreateRepoModal(true)}
               icon={PlusCircle}
