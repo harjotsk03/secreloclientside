@@ -32,9 +32,10 @@ const formatType = (type) => {
 
 export default function Repos() {
   const [showCreateRepoModal, setShowCreateRepoModal] = useState("");
-  const { user, authFetch, loading } = useAuth();
+  const { user, authFetch, authPost, loading } = useAuth();
   const [repos, setRepos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [githubConnected, setGithubConnected] = useState(true);
   const handleRepoClick = (repoId) => {
     window.location.href = `/app/repos/${repoId}`;
   };
@@ -59,12 +60,36 @@ export default function Repos() {
       }
     };
 
+    const fetchGitHubAccount = async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/github/getGitHubAccount`
+        );
+        setGithubConnected(res.connected);
+      } catch (err) {
+        console.error("Error fetching GitHub Account:", err);
+      }
+    };
+
+    fetchGitHubAccount();
     fetchRepos();
   }, [loading, user]);
 
   const filteredRepos = repos.filter((repo) =>
     repo?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleGithubConnect = async () => {
+    try {
+      const res = await authPost(
+        `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/users/github/connect`
+      );
+      console.log(res);
+      window.location.href = res.redirectUrl;
+    } catch (err) {
+      console.error("Error connecting to GitHub:", err);
+    }
+  };
 
   return (
     <>
@@ -114,16 +139,29 @@ export default function Repos() {
             Repos
           </p>
           <div className="flex flex-row gap-3">
-            <Button
-              onClick={() => {
-                setShowImportRepoGithubModal(true);
-              }}
-              variant="solid"
-              icon={Github}
-              size="sm"
-            >
-              Import Repo
-            </Button>
+            {githubConnected ? (
+              <Button
+                onClick={() => {
+                  setShowImportRepoGithubModal(true);
+                }}
+                variant="solid"
+                icon={Github}
+                size="sm"
+              >
+                Import Repo
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  handleGithubConnect();
+                }}
+                variant="ghost"
+                icon={Github}
+                size="sm"
+              >
+                Connect GitHub Account
+              </Button>
+            )}
             <Button
               onClick={() => setShowCreateRepoModal(true)}
               icon={PlusCircle}

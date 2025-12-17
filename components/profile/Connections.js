@@ -45,12 +45,12 @@ export default function Connections() {
   }, []);
 
   return (
-    <div className="flex flex-col bg-white dark:bg-gray-900 rounded-xl mt-4 border border-stone-300 dark:border-stone-700">
+    <div className="flex flex-col bg-white dark:bg-darkBG rounded-xl mt-4 border border-stone-300 dark:border-stone-700/50">
       <div className="px-6 py-4">
         <h2 className="font-semibold text-lg text-black dark:text-white">
           Connections & Integrations
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">
           Connect your accounts to unlock additional features
         </p>
       </div>
@@ -59,12 +59,12 @@ export default function Connections() {
 
       <div className="flex flex-col">
         {/* GitHub Integration */}
-        <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <div className="w-full px-6 py-4 flex items-center justify-between transition-colors">
           <div className="flex items-center gap-4">
             {/* GitHub Icon */}
-            <div className="w-10 h-10 rounded-lg bg-black dark:bg-white flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg dark:bg-stone-800 bg-white flex items-center justify-center">
               <svg
-                className="w-6 h-6 text-white dark:text-black"
+                className="w-6 h-6 dark:text-white text-black"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -82,7 +82,7 @@ export default function Connections() {
                 className={`text-sm ${
                   isConnected
                     ? " text-green-600 dark:text-green-400"
-                    : "text-gray-600 dark:text-gray-400"
+                    : "text-stone-600 dark:text-stone-400"
                 }`}
               >
                 {isConnected
@@ -109,14 +109,14 @@ export default function Connections() {
 
         {/* Coming Soon Section */}
         <div className="px-6 py-4 border-t border-stone-300 dark:border-stone-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <p className="text-sm text-stone-500 dark:text-stone-400 mb-3">
             Coming soon
           </p>
           <div className="flex gap-3">
             {["GitLab", "Bitbucket", "Jira", "Slack"].map((service) => (
               <div
                 key={service}
-                className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-sm cursor-not-allowed"
+                className="px-3 py-2 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 text-sm cursor-not-allowed"
               >
                 {service}
               </div>
