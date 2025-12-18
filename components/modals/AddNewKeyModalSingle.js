@@ -80,7 +80,7 @@ export default function AddNewKeyModalSingle({
 
   // 🔹 Handle Create Secret
   const handleCreateSecret = async () => {
-    if (!secretName || !secretType || !secret || !encryptedData) {
+    if (!secretName || !secret || !encryptedData) {
       showAlert("Please fill all required fields.");
       return;
     }
@@ -167,7 +167,6 @@ export default function AddNewKeyModalSingle({
         <div className="flex flex-col xl:flex-row gap-2 xl:gap-4">
           <Select
             label="Secret Type"
-            required
             placeholder="Secret Type"
             options={secretTypeOptions}
             value={secretType}

@@ -70,9 +70,11 @@ export default function SecretCard({
       <div>
         <p className="text-base dm-sans-semibold text-black dark:text-white">
           {secret.name}{" "}
-          <span className="text-xs dm-sans-light text-green-700 dark:text-white mt-1">
-            ({formatSecretType(secret.type)})
-          </span>
+          {secret.type != "" && (
+            <span className="text-xs dm-sans-light text-green-700 dark:text-white mt-1">
+              ({formatSecretType(secret.type)})
+            </span>
+          )}
         </p>
         <p className="text-xs text-stone-600 dark:text-stone-400 mt-1">
           {secret.description}

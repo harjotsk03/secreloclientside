@@ -365,7 +365,6 @@ export default function ViewKeyDetailsModal({
           />
           <Select
             label="Secret Type"
-            required={true}
             placeholder="Secret Type"
             icon={KeySquare}
             options={secretTypeOptions}

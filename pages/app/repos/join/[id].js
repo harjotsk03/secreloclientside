@@ -35,11 +35,9 @@ export default function Join() {
         const res = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/join/${id}`
         );
-        setRepoDetails(res?.data)
+        setRepoDetails(res?.data);
         setMemberSetsRole(res?.data?.member_role == "" ? true : false);
         setMemberRole(res?.data?.member_role);
-        console.log((res?.data)
-        )
       } catch (err) {
         console.error("Error fetching repos:", err);
       }
@@ -52,14 +50,18 @@ export default function Join() {
     e.preventDefault();
     setLoading(true);
 
+    if (memberRole == "") {
+      showAlert("Please enter your role/title.", "error");
+      setLoading(false);
+      return;
+    }
+
     try {
       // const body = { name, description, type: repoType, member_role: userRole };
 
       const data = await authPost(
         `${process.env.NEXT_PUBLIC_API_URL}/secreloapis/v1/repos/join/submit/${id}?member_role=${memberRole}`
       );
-
-      console.log(data);
 
       showAlert("Repo joined successfully!", "success");
       // setShowCreateRepoModal(false);
@@ -95,7 +97,7 @@ export default function Join() {
             <p className="text-black dark:text-white text-2xl dm-sans-regular mt-3">
               {repoDetails?.repo_name}
             </p>
-            <p className="text-stone-600 mt-1 text-center md:w-1/2 lg:w-11/12 w-10/12 dark:text-stone-500 text-sm dm-sans-light">
+            <p className="text-stone-600 mt-1 text-center md:w-1/2 lg:w-11/12 w-10/12 dark:text-stone-400 text-sm dm-sans-light">
               {repoDetails?.repo_description}
             </p>
             <div
@@ -103,12 +105,12 @@ export default function Join() {
                 !memberSetsRole && "mb-6"
               } flex flex-row gap-4 items-center mt-4`}
             >
-              <p className="dm-sans-light capitalize flex items-center text-xs w-max">
-                <span className="text-stone-600 text-xl mr-1">•</span>
+              <p className="dm-sans-light text-stone-600 dark:text-stone-400 capitalize flex items-center text-xs w-max">
+                <span className="text-xl mr-1">•</span>
                 {formatType(repoDetails?.repo_type)}
               </p>
               <p
-                className={`dm-sans-light capitalize flex items-center text-xs w-max`}
+                className={`dm-sans-light capitalize text-stone-600 dark:text-stone-400 flex items-center text-xs w-max`}
               >
                 <span className="text-green-600 text-xl mr-1">•</span>
                 {repoDetails?.member_count}{" "}
@@ -126,7 +128,9 @@ export default function Join() {
               </div>
             )}
             <div className="lg:hidden">
-              <Button size="lg">Join Repo</Button>
+              <Button loading={loading} onClick={handleRepoJoin} size="lg">
+                Join Repo
+              </Button>
             </div>
             <div className="hidden lg:flex">
               {repoDetails?.user_is_member ? (
